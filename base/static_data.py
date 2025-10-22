@@ -13,6 +13,7 @@ POLICY_MASTER_CACHE = {}
 POLICY_HISTORY_CACHE = {}
 RISK_CACHE = {}
 TRANSACTION_TYPE_CACHE = {}
+PET_RISK_PET_CACHE = {}
 
 # -------------------------
 # Save cache to disk
@@ -25,6 +26,7 @@ def save_static_cache():
             "POLICY_HISTORY_CACHE": POLICY_HISTORY_CACHE,
             "RISK_CACHE": RISK_CACHE,
             "TRANSACTION_TYPE_CACHE": TRANSACTION_TYPE_CACHE,
+            "PET_RISK_PET_CACHE": PET_RISK_PET_CACHE,
         }, f)
     print(f"✅ Saved cache to {CACHE_FILE}")
 
@@ -33,14 +35,15 @@ def save_static_cache():
 # -------------------------
 def load_static_cache():
     """Load all caches from disk (no DB contact)."""
-    global POLICY_MASTER_CACHE, POLICY_HISTORY_CACHE, RISK_CACHE, TRANSACTION_TYPE_CACHE
+    global POLICY_MASTER_CACHE, POLICY_HISTORY_CACHE, RISK_CACHE, TRANSACTION_TYPE_CACHE, PET_RISK_PET_CACHE
     if CACHE_FILE.exists():
         with open(CACHE_FILE, "rb") as f:
             data = pickle.load(f)
-            POLICY_MASTER_CACHE = data["POLICY_MASTER_CACHE"]
-            POLICY_HISTORY_CACHE = data["POLICY_HISTORY_CACHE"]
+            POLICY_MASTER_CACHE = data.get("POLICY_MASTER_CACHE", {})
+            POLICY_HISTORY_CACHE = data.get("POLICY_HISTORY_CACHE", {})
             RISK_CACHE = data.get("RISK_CACHE", {})
             TRANSACTION_TYPE_CACHE = data.get("TRANSACTION_TYPE_CACHE", {})
+            PET_RISK_PET_CACHE = data.get("PET_RISK_PET_CACHE", {})
         print(f"✅ Loaded cache from {CACHE_FILE}")
     else:
         print("⚠️ No cache file found — run refresh_static_cache() once first.")
@@ -54,31 +57,21 @@ def load_static_data():
     All caches are stored in a consistent flat format (dicts keyed by ID)
     so they can be easily converted to DataFrames.
     """
-    from base.models import PolicyMaster, PolicyHistory, Risk, TransactionType
+    from base.models import PolicyMaster, PolicyHistory, Risk, TransactionType, PetRiskPet
     print("🔄 Loading static data from database...")
 
-    global POLICY_MASTER_CACHE, POLICY_HISTORY_CACHE, RISK_CACHE, TRANSACTION_TYPE_CACHE
+    global POLICY_MASTER_CACHE, POLICY_HISTORY_CACHE, RISK_CACHE, TRANSACTION_TYPE_CACHE, PET_RISK_PET_CACHE
 
-    # 1️⃣ Load lookup tables (flat dict keyed by ID)
-    RISK_CACHE = {r.riskid: r for r in Risk.objects.using("default").all()}
-    TRANSACTION_TYPE_CACHE = {t.transactiontypeid: t for t in TransactionType.objects.using("default").all()}
+    # Load Tables (flat dict keyed by ID)
+    
+    POLICY_MASTER_CACHE = {pm.policy_master_id: pm for pm in PolicyMaster.objects.using("default").all()}
+    POLICY_HISTORY_CACHE = {ph.policy_history_id: ph for ph in PolicyHistory.objects.using("default").all()}
+    RISK_CACHE = {r.risk_id: r for r in Risk.objects.using("default").all()}
+    TRANSACTION_TYPE_CACHE = {tt.transaction_type_id: tt for tt in TransactionType.objects.using("default").all()}
+    PET_RISK_PET_CACHE = {prp.pet_risk_pet_id: prp for prp in PetRiskPet.objects.using("default").all()}
 
-    # 2️⃣ Load all PolicyHistory
-    POLICY_HISTORY_CACHE = {}
-    for ph in PolicyHistory.objects.using("default").all():
-        # attach related objects for convenience
-        ph.risk_obj = RISK_CACHE.get(ph.riskid)
-        ph.transaction_type_obj = TRANSACTION_TYPE_CACHE.get(ph.transactiontypeid)
-        # store as a flat list for each policy master
-        POLICY_HISTORY_CACHE.setdefault(ph.policymasterid, []).append(ph)
-
-    # 3️⃣ Load PolicyMaster
-    qs_policies = PolicyMaster.objects.using("default").all()
-    POLICY_MASTER_CACHE = {}
-    for p in qs_policies:
-        # attach its histories as a flat list
-        p.histories = POLICY_HISTORY_CACHE.get(p.policymasterid, [])
-        POLICY_MASTER_CACHE[p.policymasterid] = p
-
-    print(f"✅ Loaded {len(POLICY_MASTER_CACHE)} PolicyMaster records with histories")
-    print(f"✅ Loaded {sum(len(v) for v in POLICY_HISTORY_CACHE.values())} PolicyHistory records")
+    print(f"✅ Loaded {len(POLICY_MASTER_CACHE)} PolicyMaster records")
+    print(f"✅ Loaded {len(POLICY_HISTORY_CACHE)} PolicyHistory records")
+    print(f"✅ Loaded {len(RISK_CACHE)} Risk records")
+    print(f"✅ Loaded {len(TRANSACTION_TYPE_CACHE)} TransactionType records")
+    print(f"✅ Loaded {len(PET_RISK_PET_CACHE)} PetRiskPet records")

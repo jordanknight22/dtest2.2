@@ -413,27 +413,32 @@ def re_rate_policies(request):
     # Load cached data from disk (no DB queries)
     static_data.load_static_cache()
 
-    # POLICY_MASTER_CACHE → DataFrame
+    # Convert to DataFrames
     df_master = pd.DataFrame([{
-        "policymasterid": m.policymasterid,
-        "policynumber": m.policynumber
+        "policy_master_id": m.policy_master_id,
+        "policy_number": m.policy_number
     } for m in static_data.POLICY_MASTER_CACHE.values()])
-
-    # POLICY_HISTORY_CACHE → flatten + DataFrame
-    flat_history = [h for hist_list in static_data.POLICY_HISTORY_CACHE.values() for h in hist_list]
+    print(df_master)
 
     df_history = pd.DataFrame([{
-        "policymasterid": h.policymasterid,
-        "transactiontypeid": getattr(h, "transactiontypeid", None)
-    } for h in flat_history])
+        "policy_master_id": h.policy_master_id,
+        "transaction_type_id": getattr(h, "transaction_type_id", None)
+    } for h in static_data.POLICY_HISTORY_CACHE.values()])
 
     # Join the tables
-    df_merged = df_master.merge(df_history, how="inner", on="policymasterid")
+    df_merged = df_master.merge(df_history, how="inner", on="policy_master_id")
     policy_number = 'SAP0098476'
-    df_merged = df_merged[df_merged["policynumber"] == policy_number]
+    df_merged = df_merged[df_merged["policy_number"] == policy_number]
     
     # Convert DataFrame to list of dicts for template rendering
     policies = df_merged.to_dict(orient="records")
+
+    df_risk = pd.DataFrame([{
+        "risk_id": r.risk_id,
+        "copay": r.copay
+    } for r in static_data.RISK_CACHE.values()])
+
+    print(df_risk)
 
 
     return render(request, "base/rates/re_rate_policies.html", {"policies": policies})

@@ -2,15 +2,15 @@ from django.db import models
 
 # Create your models here.
 class PolicyMaster(models.Model):
-    policymasterid = models.IntegerField(db_column='PolicyMasterID', primary_key=True)
-    customerid = models.IntegerField(db_column='CustomerID')
-    productid = models.IntegerField(db_column='ProductID')
-    policystatusid = models.IntegerField(db_column='PolicyStatusID')
-    policynumber = models.CharField(db_column='PolicyNumber', max_length=50)
-    liveriskid = models.IntegerField(db_column='LiveRiskID')
-    renewaldate = models.DateTimeField(db_column='RenewalDate')
-    schemeid = models.IntegerField(db_column='SchemeID')
-    cancellationeffectivedate = models.DateTimeField(db_column='CancellationEffectiveDate')
+    policy_master_id = models.IntegerField(db_column='PolicyMasterID', primary_key=True)
+    customer_id = models.IntegerField(db_column='CustomerID')
+    product_id = models.IntegerField(db_column='ProductID')
+    policy_status_id = models.IntegerField(db_column='PolicyStatusID')
+    policy_number = models.CharField(db_column='PolicyNumber', max_length=50)
+    live_risk_id = models.IntegerField(db_column='LiveRiskID')
+    renewal_date = models.DateTimeField(db_column='RenewalDate')
+    scheme_id = models.IntegerField(db_column='SchemeID')
+    cancellation_effective_date = models.DateTimeField(db_column='CancellationEffectiveDate')
 
     class Meta:
         managed = False
@@ -18,14 +18,14 @@ class PolicyMaster(models.Model):
 
 
 class PolicyHistory(models.Model):
-    policyhistoryid = models.IntegerField(db_column='PolicyHistoryID', primary_key=True)
-    policymasterid = models.IntegerField(db_column='PolicyMasterID')
-    riskid = models.IntegerField(db_column='RiskID') 
-    adustmentnumber = models.IntegerField(db_column='AdjustmentNumber')
-    creationdate = models.DateTimeField(db_column='CreationDate')
-    effectivedate = models.DateTimeField(db_column='EffectiveDate')
-    schemequoteresultid = models.IntegerField(db_column='SchemeQuoteResultID')
-    transactiontypeid = models.IntegerField(db_column='TransactionTypeID') 
+    policy_history_id = models.IntegerField(db_column='PolicyHistoryID', primary_key=True)
+    policy_master_id = models.IntegerField(db_column='PolicyMasterID')
+    risk_id = models.IntegerField(db_column='RiskID') 
+    adustment_number = models.IntegerField(db_column='AdjustmentNumber')
+    creation_date = models.DateTimeField(db_column='CreationDate')
+    effective_date = models.DateTimeField(db_column='EffectiveDate')
+    scheme_quote_result_id = models.IntegerField(db_column='SchemeQuoteResultID')
+    transaction_type_id = models.IntegerField(db_column='TransactionTypeID') 
     gwp = models.FloatField(db_column='CalculatedNetPremiumExclIPT')
 
     class Meta:
@@ -34,8 +34,8 @@ class PolicyHistory(models.Model):
 
 
 class TransactionType(models.Model):
-    transactiontypeid = models.IntegerField(db_column='TransactionTypeID', primary_key=True)
-    trans_name = models.CharField(db_column='Name', max_length=50)  
+    transaction_type_id = models.IntegerField(db_column='TransactionTypeID', primary_key=True)
+    transaction_name = models.CharField(db_column='Name', max_length=50)  
 
     class Meta:
         managed = False
@@ -43,12 +43,28 @@ class TransactionType(models.Model):
 
 
 class Risk(models.Model):
-    riskid = models.IntegerField(db_column='RiskID', primary_key=True)
+    risk_id = models.IntegerField(db_column='RiskID', primary_key=True)
     copay = models.IntegerField(db_column='CoinsuranceRuleID')
 
     class Meta:
         managed = False
         db_table = 'Risk'
+
+class PetRiskPet(models.Model):
+    pet_risk_pet_id = models.IntegerField(db_column="PetRiskPetID", primary_key=True)
+    pet_type_dldid = models.IntegerField(db_column="PetTypeDLDID")
+    pet_sub_type_dldid = models.IntegerField(db_column="PetSubTypeDLDID")
+    breed_dldid = models.IntegerField(db_column="BreedDLDID")
+    size_dldid = models.IntegerField(db_column="SizeDLDID")
+    gender_dldid = models.IntegerField(db_column="GenderDLDID")
+    risk_id = models.IntegerField(db_column="RiskID")
+    cost_of_pet = models.IntegerField(db_column="CostofPet")
+    pet_dob = models.DateField(db_column="DateofBirth")
+    pet_name = models.CharField(db_column="Name", max_length=50)
+
+    class Meta:
+        managed = False
+        db_table = 'PetRiskPet'
 
 
 class PetRates(models.Model):
