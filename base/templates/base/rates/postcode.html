@@ -1,0 +1,60 @@
+{% load custom_tags %}
+
+<a href="/rates">
+    <h1>Back</h1>
+</a>
+
+<hr>
+
+<table border="1" style="border-collapse: collapse; width: 100%; text-align: center;">
+    <thead>
+        <tr>
+            <th>Pet Type</th>
+            {% for pet_type, schemes in nested_rates.items %}
+                <th colspan="{{ schemes|length }}">{{ pet_type|capfirst }}</th>
+            {% endfor %}
+        </tr>
+
+        <tr>
+            <th>Scheme</th>
+            {% for pet_type, schemes in nested_rates.items %}
+                {% for scheme, factors in schemes.items %}
+                    <th>{{ scheme|capfirst|cut:"_" }}</th>
+                {% endfor %}
+            {% endfor %}
+        </tr>
+
+        <tr>
+            <th>Limit</th>
+            {% for pet_type, schemes in nested_rates.items %}
+                {% for scheme, factors in schemes.items %}
+                    <td>{{ factors|dict_key:"limit" }}</td>
+                {% endfor %}
+            {% endfor %}
+        </tr>
+    </thead>
+        <tr>
+            <th>Postcode</th>
+        </tr>
+    <tbody>
+        {% for pc in pc_area %}
+        <tr>
+            <th>{{ pc|upper }}</th>
+            {% for pet_type, schemes in nested_rates.items %}
+                {% for scheme, factors in schemes.items %}
+                    {% with rate=factors|dict_key:"postcode"|dict_key:pc %}
+                        <td>
+                            {% if rate == 999 %}
+                                Decline
+                            {% else %}
+                                {{ rate|floatformat:3 }}
+                            {% endif %}
+                        </td>
+                    {% endwith %}
+                {% endfor %}
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+
+</table>

@@ -1,0 +1,21 @@
+{% extends 'base/main.html' %}
+
+{% block content %}
+<h1>Scratch & Patch Test Model</h1>
+
+<!-- <style>
+    .home-container{
+        display: grid;
+        grid-template-columns: 1fr 3fr;
+    }
+</style> -->
+
+<div class="home-container">
+    <div>
+        {% for room in rooms %}
+            <h5><a href="/{{room.url}}">{{room.name}}</a></h5>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock content %}

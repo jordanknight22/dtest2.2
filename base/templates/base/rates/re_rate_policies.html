@@ -1,0 +1,28 @@
+{% load custom_tags %}
+
+<a href="/rates">
+    <h1>Back</h1>
+</a>
+
+<hr>
+<div class="container mt-4">
+    <h2>Policies</h2>
+    <table class="table table-striped table-sm">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Policy Number</th>
+                <th>Transaction Type ID</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for policy in policies %}
+            <tr>
+                <td>{{ policy.policymasterid }}</td>
+                <td>{{ policy.policynumber }}</td>
+                <td>{{ policy.transactiontypeid }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

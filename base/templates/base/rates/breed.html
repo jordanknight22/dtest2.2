@@ -1,0 +1,111 @@
+{% load custom_tags %}
+
+<a href="/rates">
+    <h1>Back</h1>
+</a>
+
+<hr>
+
+<h2>Dog Breeds</h2>
+<table border="1" style="border-collapse: collapse; width: 100%; text-align: center;">
+    <thead>
+        <tr>
+            <th>Pet Type</th>
+            {% for pet_type, schemes in dog_nested_rates.items %}
+                <th colspan="{{ schemes|length }}">{{ pet_type|capfirst }}</th>
+            {% endfor %}
+        </tr>
+
+        <tr>
+            <th>Scheme</th>
+            {% for pet_type, schemes in dog_nested_rates.items %}
+                {% for scheme, factors in schemes.items %}
+                    <th>{{ scheme|capfirst|cut:"_" }}</th>
+                {% endfor %}
+            {% endfor %}
+        </tr>
+
+        <tr>
+            <th>Limit</th>
+            {% for pet_type, schemes in dog_nested_rates.items %}
+                {% for scheme, factors in schemes.items %}
+                    <td>{{ factors|dict_key:"limit" }}</td>
+                {% endfor %}
+            {% endfor %}
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for breed in dog_breeds %}
+        <tr>
+            <th>{{ breed|title }}</th>
+            {% for pet_type, schemes in dog_nested_rates.items %}
+                {% for scheme, factors in schemes.items %}
+                    {% with rate=factors|dict_key:"dog_breed"|dict_key:breed %}
+                        <td>
+                            {% if rate == 999 %}
+                                Decline
+                            {% else %}
+                                {{ rate|floatformat:3 }}
+                            {% endif %}
+                        </td>
+                    {% endwith %}
+                {% endfor %}
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<hr>
+
+<h2>Cat Breeds</h2>
+<table border="1" style="border-collapse: collapse; width: 100%; text-align: center;">
+    <thead>
+        <tr>
+            <th>Pet Type</th>
+            {% for pet_type, schemes in cat_nested_rates.items %}
+                <th colspan="{{ schemes|length }}">{{ pet_type|capfirst }}</th>
+            {% endfor %}
+        </tr>
+
+        <tr>
+            <th>Scheme</th>
+            {% for pet_type, schemes in cat_nested_rates.items %}
+                {% for scheme, factors in schemes.items %}
+                    <th>{{ scheme|capfirst|cut:"_" }}</th>
+                {% endfor %}
+            {% endfor %}
+        </tr>
+
+        <tr>
+            <th>Limit</th>
+            {% for pet_type, schemes in cat_nested_rates.items %}
+                {% for scheme, factors in schemes.items %}
+                    <td>{{ factors|dict_key:"limit" }}</td>
+                {% endfor %}
+            {% endfor %}
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for breed in cat_breeds %}
+        <tr>
+            <th>{{ breed|title }}</th>
+            {% for pet_type, schemes in cat_nested_rates.items %}
+                {% for scheme, factors in schemes.items %}
+                    {% with rate=factors|dict_key:"cat_breed"|dict_key:breed %}
+                        <td>
+                            {% if rate == 999 %}
+                                Decline
+                            {% else %}
+                                {{ rate|floatformat:3 }}
+                            {% endif %}
+                        </td>
+                    {% endwith %}
+                {% endfor %}
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

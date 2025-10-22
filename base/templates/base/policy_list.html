@@ -1,0 +1,18 @@
+{% extends 'base/main.html' %}
+
+{% block content %}
+<h1>Policy List</h1>
+<table border="1">
+    <tr>
+        <th>Policy ID</th>
+        <th>Policy Number</th>
+    </tr>
+    {% for policy in policies %}
+    <tr>
+        <td>{{ policy.policymasterid }}</td>
+        <td>{{ policy.policynumber }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock content %}

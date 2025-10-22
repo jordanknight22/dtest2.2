@@ -1,0 +1,102 @@
+{% extends 'base/main.html' %}
+
+{% block content %}
+{% load humanize %}
+
+<style>
+    table {
+        width: 60%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        font-family: Arial, sans-serif;
+    }
+
+    th, td {
+        border: 1px solid #ccc;
+        padding: 8px 12px;
+        text-align: center;
+    }
+
+    th {
+        background-color: #f4f4f4;
+    }
+
+    tr:nth-child(even) {
+        background-color: #fafafa;
+    }
+
+    form {
+        margin-bottom: 20px;
+    }
+</style>
+
+<h1>GWP Summaries</h1>
+
+<!-- Copay Dropdown Filter -->
+<form method="get">
+    <label for="copay">Copay:</label>
+    <select name="copay" id="copay" onchange="this.form.submit()">
+        <option value="*" {% if copay_filter == '*' %}selected{% endif %}>*</option>
+        <option value="Yes" {% if copay_filter == 'Yes' %}selected{% endif %}>Yes</option>
+        <option value="No" {% if copay_filter == 'No' %}selected{% endif %}>No</option>
+    </select>
+    <label for="asat">As-at:</label>
+    <select name="asat" id="asat" onchange="this.form.submit()">
+        {% for option in asat_options %}
+            <option value="{{ option }}" {% if asat_filter == option %}selected{% endif %}>
+                {{ option }}
+            </option>
+        {% endfor %}
+    </select>
+</form>
+
+<h2>By YoA</h2>
+{% if summary %}
+<table>
+    <thead>
+        <tr>
+            <th>YoA</th>
+            <th>GWP</th>
+            <th>GEP</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in summary %}
+        <tr>
+            <td>{{ row.yoa }}</td>
+            <td>{{ row.gwp|floatformat:0|intcomma }}</td>
+            <td>{{ row.gep|floatformat:0|intcomma }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+    <p>No yearly data available.</p>
+{% endif %}
+
+
+<h2>By Underwriting Month</h2>
+{% if summary_month %}
+<table>
+    <thead>
+        <tr>
+            <th>Underwriting Month</th>
+            <th>GWP</th>
+            <th>GEP</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in summary_month %}
+        <tr>
+            <td>{{ row.uw_month}}</td>
+            <td>{{ row.gwp|floatformat:0|intcomma }}</td>
+            <td>{{ row.gep|floatformat:0|intcomma }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+    <p>No monthly data available.</p>
+{% endif %}
+
+{% endblock content %}

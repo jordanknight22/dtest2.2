@@ -1,0 +1,33 @@
+# Python
+*.py[cod]
+__pycache__/
+*.pyo
+*.pyd
+*.egg-info/
+
+# Virtual environments
+env/
+env2/
+venv/
+.venv/
+
+# Django
+db.sqlite3
+*.log
+media/
+staticfiles/
+
+# Cache / pickles
+base/policy_cache.pkl
+*.pkl
+
+# Environment variables
+.env
+
+# IDE / Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

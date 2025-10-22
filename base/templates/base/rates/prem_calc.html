@@ -1,0 +1,236 @@
+{% load custom_tags %}
+
+<a href="/rates">
+    <h1>Back</h1>
+</a>
+
+<form id="petForm">
+    <label for="pet_type">Pet Type:</label>
+    <select id="pet_type" name="Pet Type" onchange="fetchPetRates()">
+        <option value="">-- Select Pet Type --</option>
+        {% for pet in pet_types %}
+            <option value="{{ pet|capfirst }}">{{ pet|capfirst }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+<form id="coverForm">
+    <label for="cover_level">Cover Level:</label>
+    <select id="cover_level" name="Cover Level" onchange="fetchPetRates()">
+        <option value="">-- Select Cover Level --</option>
+        {% for level in cover_levels %}
+            <option value="{{ level }}">{{ level|capfirst }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+<div id="limitDisplay">Limit: --</div>
+
+<form id="genderForm">
+    <label for="pet_gender">Pet Gender:</label>
+    <select id="pet_gender" name="Pet Gender" onchange="fetchPetRates()">
+        <option value="">-- Select Pet Gender --</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+    </select>
+</form>
+
+<form id="pet_ageForm1">
+    <label for="pet_age1">Pet Age (months):</label>
+    <select id="pet_age1" name="Pet Age" onchange="fetchPetRates()">
+        <option value="">-- Select Pet Age (months) --</option>
+        <option value="1-50">1-50</option>
+        <option value="51-100">51-100</option>
+        <option value="101+">101+</option>
+    </select>
+</form>
+
+<form id="pet_ageForm2">
+    <label for="pet_age2">Pet Age (months):</label>
+    <select id="pet_age2" name="Pet Age" onchange="fetchPetRates()">
+        <option value="">-- Select Pet Age (months) --</option>
+        {% for age in pet_age_options %}
+            <option value="{{ age }}">{{ age }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+<form id="dog_breedForm">
+    <label for="dog_breed">Dog Breed:</label>
+    <select id="dog_breed" name="Dog Breed" onchange="fetchPetRates()">
+        <option value="">-- Select Dog Breed --</option>
+        {% for breed in dog_breeds %}
+            <option value="{{ breed|title }}">{{ breed|title }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+<form id="cat_breedForm">
+    <label for="cat_breed">Cat Breed:</label>
+    <select id="cat_breed" name="Cat Breed" onchange="fetchPetRates()">
+        <option value="">-- Select Cat Breed --</option>
+        {% for breed in cat_breeds %}
+            <option value="{{ breed|title }}">{{ breed|title }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+<form id="pet_priceForm">
+    <label for="pet_price">Purchase Price:</label>
+    <select id="pet_price" name="Purchase Price" onchange="fetchPetRates()">
+        <option value="">-- Select Purchase Price --</option>
+        {% for price in pet_price_options %}
+            <option value="{{ price }}">{{ price }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+<form id="neuteredForm">
+    <label for="neutered">Has the animal been neutered?</label>
+    <select id="neutered" name="Neutered" onchange="fetchPetRates()">
+        <option value="">-- Select Yes/No --</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+    </select>
+</form>
+
+<form id="chippedForm">
+    <label for="chipped">Has the animal been chipped?</label>
+    <select id="chipped" name="Chipped" onchange="fetchPetRates()">
+        <option value="">-- Select Yes/No --</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+    </select>
+</form>
+
+<form id="aggressiveForm">
+    <label for="aggressive">Has the animal shown aggressive tendencies?</label>
+    <select id="aggressive" name="Aggressive" onchange="fetchPetRates()">
+        <option value="">-- Select Yes/No --</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+    </select>
+</form>
+
+<form id="your_petForm">
+    <label for="your_pet">Is the animal your pet?</label>
+    <select id="your_pet" name="Your pet" onchange="fetchPetRates()">
+        <option value="">-- Select Yes/No --</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+    </select>
+</form>
+
+<form id="postcodeForm">
+    <label for="postcode">What is your postcode?</label>
+    <select id="postcode" name="Postcode" onchange="fetchPetRates()">
+        <option value="">-- Select Postcode --</option>
+        {% for postcode in postcodes %}
+            <option value="{{ postcode|upper }}">{{ postcode|upper }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+<form id="uk_residentForm">
+    <label for="uk_resident">Are you a full time UK resident?</label>
+    <select id="uk_resident" name="UK resident" onchange="fetchPetRates()">
+        <option value="">-- Select Yes/No --</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+    </select>
+</form>
+
+<form id="kept_at_addForm">
+    <label for="kept_at_add">Is the animal kept at the address given?</label>
+    <select id="kept_at_add" name="Kept at Address" onchange="fetchPetRates()">
+        <option value="">-- Select Yes/No --</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+    </select>
+</form>
+
+<form id="breedingForm">
+    <label for="breeding">Has the animal been used for breeding or been connected in any way with a trade or business?</label>
+    <select id="breeding" name="Breeding" onchange="fetchPetRates()">
+        <option value="">-- Select Yes/No --</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+    </select>
+</form>
+
+<form id="ph_ageForm">
+    <label for="ph_age">Policyholder Age:</label>
+    <select id="ph_age" name="Policyholder Age" onchange="fetchPetRates()">
+        <option value="">-- Select Policyholder Age --</option>
+        {% for age in ph_age_options %}
+            <option value="{{ age }}">{{ age }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+<form id="copayForm">
+    <label for="copay">Copay:</label>
+    <select id="copay" name="Copay" onchange="fetchPetRates()">
+        <option value="">-- Select Yes/No --</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+    </select>
+</form>
+
+<form id="multipetForm">
+    <label for="multipet">Multipet:</label>
+    <select id="multipet" name="Multipet" onchange="fetchPetRates()">
+        <option value="">-- Select Yes/No --</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+    </select>
+</form>
+
+<script>
+async function fetchPetRates() {
+    const pet_type = document.getElementById('pet_type').value;
+    const cover_level = document.getElementById('cover_level').value;
+    const pet_age1 = document.getElementById('pet_age1').value;      
+    const pet_gender = document.getElementById('pet_gender').value;
+    const pet_age2 = document.getElementById('pet_age2').value;
+
+    // Only query when all are selected
+    if (!pet_type || !cover_level || !pet_age1 || !pet_gender || !pet_age2) {
+        document.getElementById('limitDisplay').innerText = "Limit: --";
+        return;
+    }
+
+    const params = new URLSearchParams({
+        pet_type: pet_type,
+        cover_level: cover_level,
+        pet_age1: pet_age1,
+        pet_gender: pet_gender,
+        pet_age2: pet_age2,
+    });
+
+    try {
+        const response = await fetch(`/rates/get_pet_rates/?${params.toString()}`);
+        const data = await response.json();
+
+        if (data.error) {
+            document.getElementById('limitDisplay').innerText = data.error;
+            return;
+        }
+
+        // Get base rate and limit
+        const limit = data.limit ?? '--';
+        const baseRate = data.base_rate ?? '--';
+        const petAgeGenderRate = data.pet_age_gender_rate ?? 1;
+        const petAgeRate = data.pet_age_rate ?? 1;
+
+        // Calculate final rate
+        const finalRate = (baseRate * petAgeGenderRate).toFixed(2);
+
+        // Update display
+        document.getElementById('limitDisplay').innerText = `Limit: ${limit} | Base Rate: ${baseRate} | Pet Age Gender Loading: ${petAgeGenderRate} | Pet Age Loading ${petAgeRate}`;
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        document.getElementById('limitDisplay').innerText = 'Error fetching data.';
+    }
+}
+</script>

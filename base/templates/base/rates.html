@@ -1,0 +1,14 @@
+{% extends 'base/main.html' %}
+
+{% block content %}
+<h1>Scratch & Patch Rating Guide</h1>
+
+<div class="Rates">
+    <div>
+        {% for factor in factors %}
+            <h5><a href="{{factor.url}}">{{factor.name}}</a></h5>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock content %}
