@@ -66,6 +66,14 @@ class PetRiskPet(models.Model):
         managed = False
         db_table = 'PetRiskPet'
 
+class DefinedListDetail(models.Model):
+    defined_list_detail_id = models.IntegerField(db_column="DefinedListDetailID", primary_key=True)
+    dld_name = models.CharField(db_column="Name", max_length=50)
+
+    class Meta:
+        managed = False
+        db_table = 'DefinedListDetail'
+
 
 class PetRates(models.Model):
     PET_CHOICES = [

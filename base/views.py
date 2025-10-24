@@ -420,25 +420,43 @@ def re_rate_policies(request):
     } for m in static_data.POLICY_MASTER_CACHE.values()])
     print(df_master)
 
+    policy_number = 'SAP0098476'
+    df_master = df_master[df_master["policy_number"] == policy_number]
+
     df_history = pd.DataFrame([{
         "policy_master_id": h.policy_master_id,
-        "transaction_type_id": getattr(h, "transaction_type_id", None)
+        "transaction_type_id": getattr(h, "transaction_type_id"),
+        "risk_id": getattr(h, "risk_id")
     } for h in static_data.POLICY_HISTORY_CACHE.values()])
-
-    # Join the tables
-    df_merged = df_master.merge(df_history, how="inner", on="policy_master_id")
-    policy_number = 'SAP0098476'
-    df_merged = df_merged[df_merged["policy_number"] == policy_number]
-    
-    # Convert DataFrame to list of dicts for template rendering
-    policies = df_merged.to_dict(orient="records")
 
     df_risk = pd.DataFrame([{
         "risk_id": r.risk_id,
         "copay": r.copay
     } for r in static_data.RISK_CACHE.values()])
+    
+    df_prp = pd.DataFrame([{
+        "pet_risk_pet_id": prp.pet_risk_pet_id,
+        "pet_name": getattr(prp, "pet_name"),
+        "risk_id": getattr(prp, "risk_id"),
+    } for prp in static_data.PET_RISK_PET_CACHE.values() ])
 
-    print(df_risk)
+    df_dld = pd.DataFrame([{
+        "dld_id": dld.defined_list_detail_id,
+        "dld_name": getattr(dld, "dld_name"),
+    } for dld in static_data.DEFINED_LIST_DETAIL_CACHE.values()])
+    
+    print(df_dld)
+
+
+    # Join the tables
+    df_merged = df_master.merge(df_history, how="inner", on="policy_master_id")
+    df_merged = df_merged.merge(df_risk, how="inner", on="risk_id")
+    df_merged = df_merged.merge(df_prp, how="inner", on="risk_id")
+    
+    print(df_merged)
+
+    # Convert DataFrame to list of dicts for template rendering
+    policies = df_merged.to_dict(orient="records")
 
 
     return render(request, "base/rates/re_rate_policies.html", {"policies": policies})
