@@ -437,16 +437,15 @@ def re_rate_policies(request):
     df_prp = pd.DataFrame([{
         "pet_risk_pet_id": prp.pet_risk_pet_id,
         "pet_name": getattr(prp, "pet_name"),
-        "risk_id": getattr(prp, "risk_id"),
-    } for prp in static_data.PET_RISK_PET_CACHE.values() ])
+        "risk_id": getattr(prp, "risk_id")
+    } for prp in static_data.PET_RISK_PET_CACHE.values()])
 
     df_dld = pd.DataFrame([{
         "dld_id": dld.defined_list_detail_id,
-        "dld_name": getattr(dld, "dld_name"),
+        "dld_name": getattr(dld, "dld_name")
     } for dld in static_data.DEFINED_LIST_DETAIL_CACHE.values()])
     
     print(df_dld)
-
 
     # Join the tables
     df_merged = df_master.merge(df_history, how="inner", on="policy_master_id")
