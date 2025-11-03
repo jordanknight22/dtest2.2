@@ -69,6 +69,7 @@ class PetRiskPet(models.Model):
 class DefinedListDetail(models.Model):
     defined_list_detail_id = models.IntegerField(db_column="DefinedListDetailID", primary_key=True)
     dld_name = models.CharField(db_column="Name", max_length=50)
+    unique_id = models.CharField(db_column="UniqueID", max_length=50)
 
     class Meta:
         managed = False

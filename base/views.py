@@ -1,7 +1,4 @@
 import pandas as pd
-import numpy as np
-import pprint
-from datetime import datetime
 from django.shortcuts import render
 from .models import *
 from collections import defaultdict
@@ -418,7 +415,6 @@ def re_rate_policies(request):
         "policy_master_id": m.policy_master_id,
         "policy_number": m.policy_number
     } for m in static_data.POLICY_MASTER_CACHE.values()])
-    print(df_master)
 
     policy_number = 'SAP0098476'
     df_master = df_master[df_master["policy_number"] == policy_number]
@@ -437,20 +433,63 @@ def re_rate_policies(request):
     df_prp = pd.DataFrame([{
         "pet_risk_pet_id": prp.pet_risk_pet_id,
         "pet_name": getattr(prp, "pet_name"),
-        "risk_id": getattr(prp, "risk_id")
+        "risk_id": getattr(prp, "risk_id"),
+        "pet_type_dldid": getattr(prp, "pet_type_dldid"),
+        "pet_sub_type_dldid": getattr(prp, "pet_sub_type_dldid"),
+        "breed_dldid": getattr(prp, "breed_dldid"),
+        "size_dldid": getattr(prp, "size_dldid"),
+        "gender_dldid": getattr(prp, "gender_dldid"),
+        "cost_of_pet": getattr(prp, "cost_of_pet"),
+        "pet_dob": getattr(prp, "pet_dob"),
     } for prp in static_data.PET_RISK_PET_CACHE.values()])
 
     df_dld = pd.DataFrame([{
         "dld_id": dld.defined_list_detail_id,
-        "dld_name": getattr(dld, "dld_name")
+        "dld_name": getattr(dld, "dld_name"),
+        "unique_id": getattr(dld, "unique_id")
     } for dld in static_data.DEFINED_LIST_DETAIL_CACHE.values()])
     
-    print(df_dld)
+    df_dld["Item"] = (
+        df_dld["unique_id"]
+        .str.split(".", n=1).str[0]
+        .str.replace("Cat", "PetSub", regex=False)
+        .str.replace("Dog", "PetSub", regex=False)
+        .str.replace("PetSubBreeds", "Breed", regex=False)
+    )
+    
+    # Map the DLD ID columns to human-readable "Item" types
+    melted_prp = df_prp.melt(
+        id_vars=["pet_risk_pet_id", "risk_id"],
+        value_vars=[
+            "pet_type_dldid",
+            "pet_sub_type_dldid",
+            "breed_dldid",
+            "size_dldid",
+            "gender_dldid",
+        ],
+        var_name="item_type",
+        value_name="dld_id"
+    )
+
+    # Join the DLD table to the PRP one
+    melted_prp_dld = melted_prp.merge(
+        df_dld, 
+        how="left", 
+        on="dld_id"
+    )
+
+    # Pivot the table
+    pivoted_prp_dld = melted_prp_dld.pivot_table(
+        index=["pet_risk_pet_id", "risk_id"],
+        columns="Item",
+        values="dld_name",
+        aggfunc="first"
+    ).reset_index()
 
     # Join the tables
     df_merged = df_master.merge(df_history, how="inner", on="policy_master_id")
     df_merged = df_merged.merge(df_risk, how="inner", on="risk_id")
-    df_merged = df_merged.merge(df_prp, how="inner", on="risk_id")
+    df_merged = df_merged.merge(pivoted_prp_dld, how="inner", on="risk_id")
     
     print(df_merged)
 
