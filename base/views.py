@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from .utils import *
 import json
 import os
+import re
 from base import static_data
 
 rating_guide =  r'C:\Users\jorda\OneDrive\Desktop\SP Rating Guide v38 - Multiple changes.xlsx'
@@ -416,7 +417,7 @@ def re_rate_policies(request):
         "policy_number": m.policy_number
     } for m in static_data.POLICY_MASTER_CACHE.values()])
 
-    policy_number = 'SAP0098476'
+    policy_number = 'SAP0079206'
     df_master = df_master[df_master["policy_number"] == policy_number]
 
     df_history = pd.DataFrame([{
@@ -424,6 +425,11 @@ def re_rate_policies(request):
         "transaction_type_id": getattr(h, "transaction_type_id"),
         "risk_id": getattr(h, "risk_id")
     } for h in static_data.POLICY_HISTORY_CACHE.values()])
+
+    df_tt = pd.DataFrame([{
+        "transaction_type_id": tt.transaction_type_id,
+        "transaction_name": getattr(tt, "transaction_name")
+    } for tt in static_data.TRANSACTION_TYPE_CACHE.values()])
 
     df_risk = pd.DataFrame([{
         "risk_id": r.risk_id,
@@ -456,8 +462,38 @@ def re_rate_policies(request):
         .str.replace("Dog", "PetSub", regex=False)
         .str.replace("PetSubBreeds", "Breed", regex=False)
     )
+
+    df_pr = pd.DataFrame([{
+        "risk_id": pr.risk_id,
+        "pet_proposer_id": getattr(pr, "pet_proposer_id"),
+        "pet_cover_level_dldid": getattr(pr, "pet_cover_level_dldid"),
+    } for pr in static_data.PET_RISK_CACHE.values()])
     
-    # Map the DLD ID columns to human-readable "Item" types
+    df_pp = pd.DataFrame([{
+        "pet_proposer_id": pp.pet_proposer_id,
+        "address_id": getattr(pp, "address_id"),
+        "ph_dob": getattr(pp, "ph_dob"),
+    } for pp in static_data.PET_PROPOSER_CACHE.values()])
+
+    df_a = pd.DataFrame([{
+        "address_id": a.address_id,
+        "postcode": getattr(a, "postcode")
+    } for a in static_data.ADDRESS_CACHE.values()])
+
+    # Pull in Cover Level Name and proposer info
+    df_pr_merged = df_pr.merge(
+        df_dld[["dld_name", "dld_id"]], 
+        how="inner", 
+        left_on="pet_cover_level_dldid", 
+        right_on="dld_id"
+    )
+    df_pr_merged = df_pr_merged.merge(df_pp, how="inner", on="pet_proposer_id")
+    df_pr_merged = df_pr_merged.merge(df_a, how="inner", on="address_id")
+    
+    # Remove columns not required
+    df_pr_merged = df_pr_merged[["risk_id", "dld_name", "ph_dob", "postcode"]].rename(columns={"dld_name": "scheme"})
+
+    # Map the DLD ID columns to readable "Item" types
     melted_prp = df_prp.melt(
         id_vars=["pet_risk_pet_id", "risk_id"],
         value_vars=[
@@ -472,14 +508,14 @@ def re_rate_policies(request):
     )
 
     # Join the DLD table to the PRP one
-    melted_prp_dld = melted_prp.merge(
+    melted_merge = melted_prp.merge(
         df_dld, 
         how="left", 
         on="dld_id"
     )
 
     # Pivot the table
-    pivoted_prp_dld = melted_prp_dld.pivot_table(
+    pivoted_merge = melted_merge.pivot_table(
         index=["pet_risk_pet_id", "risk_id"],
         columns="Item",
         values="dld_name",
@@ -489,9 +525,80 @@ def re_rate_policies(request):
     # Join the tables
     df_merged = df_master.merge(df_history, how="inner", on="policy_master_id")
     df_merged = df_merged.merge(df_risk, how="inner", on="risk_id")
-    df_merged = df_merged.merge(pivoted_prp_dld, how="inner", on="risk_id")
+    df_merged = df_merged.merge(df_tt, how="inner", on="transaction_type_id")
+    df_merged = df_merged.merge(pivoted_merge, how="inner", on="risk_id")
+    df_merged = df_merged.merge(df_pr_merged, how="inner", on="risk_id")
+
+    # Reformatting
+    df_merged["PetType"] = df_merged["PetType"].str.lower()
+    df_merged["scheme"] = df_merged["scheme"].str.lower()
+    df_merged["postcode"] = (
+        df_merged['postcode']
+        .astype(str)
+        .str.strip()
+        .str.lower()
+        .str.extract(r'^([a-z]{1,2})', expand=False)
+    )
+
+    df_merged["copay"] = df_merged["copay"].map({1: "yes", 2: "no"})
+
+    # Filter NB / REN only
+    df_merged = df_merged[
+        (df_merged["transaction_name"] == "New Business") | 
+        (df_merged["transaction_name"] == "Renewal")  
+    ]
+
+    # Fetch the rates
+    all_rates = PetRates.objects.all()
+    df_rates = pd.DataFrame(list(all_rates.values()))
+    df_rates["scheme"] = df_rates["scheme"].replace("_", " ", regex=False)
+    df_rates.to_csv("df_rates_export.csv", index=False)
     
+    # Base Rates
+    df_merged["base_rate"] = df_merged.apply(
+        lambda row: df_rates[
+            (df_rates["pet_type"] == row["PetType"]) &
+            (df_rates["scheme"] == row["scheme"]) &
+            (df_rates["factor"] == "base_rate")
+        ]['rate'].values[0], axis=1
+     )
+    
+    # Limit
+    df_merged["limit"] = df_merged.apply(
+        lambda row: df_rates[
+            (df_rates["pet_type"] == row["PetType"]) &
+            (df_rates["scheme"] == row["scheme"])
+        ]['limit'].values[0], axis=1
+    )
+
+    # Remaining factors
+    factors = {
+        "copay_factor": ("copay", "copay"),
+        "postcode_factor": ("postcode", "postcode")
+    }
+
+    for new_col, (factor_name, option_col) in factors.items():
+        df_merged[new_col] = df_merged.apply(
+            lambda row: (
+                df_rates[
+                    (df_rates["pet_type"] == row["PetType"]) &
+                    (df_rates["scheme"] == row["scheme"]) &
+                    (df_rates["factor"] == factor_name) &
+                    (df_rates["option"] == row[option_col])
+                ]["rate"].values[0]
+                if not df_rates[
+                    (df_rates["pet_type"] == row["PetType"]) &
+                    (df_rates["scheme"] == row["scheme"]) &
+                    (df_rates["factor"] == factor_name) &
+                    (df_rates["option"] == row[option_col])
+                ].empty
+                else None  # avoid IndexError if nothing matches
+            ),
+            axis=1
+        )
+
     print(df_merged)
+    
 
     # Convert DataFrame to list of dicts for template rendering
     policies = df_merged.to_dict(orient="records")

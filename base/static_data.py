@@ -15,6 +15,9 @@ RISK_CACHE = {}
 TRANSACTION_TYPE_CACHE = {}
 PET_RISK_PET_CACHE = {}
 DEFINED_LIST_DETAIL_CACHE = {}
+PET_RISK_CACHE = {}
+PET_PROPOSER_CACHE = {}
+ADDRESS_CACHE = {}
 
 # -------------------------
 # Save cache to disk
@@ -29,6 +32,9 @@ def save_static_cache():
             "TRANSACTION_TYPE_CACHE": TRANSACTION_TYPE_CACHE,
             "PET_RISK_PET_CACHE": PET_RISK_PET_CACHE,
             "DEFINED_LIST_DETAIL_CACHE": DEFINED_LIST_DETAIL_CACHE,
+            "PET_RISK_CACHE": PET_RISK_CACHE,
+            "PET_PROPOSER_CACHE": PET_PROPOSER_CACHE,
+            "ADDRESS_CACHE": ADDRESS_CACHE,
         }, f)
     print(f"✅ Saved cache to {CACHE_FILE}")
 
@@ -37,7 +43,7 @@ def save_static_cache():
 # -------------------------
 def load_static_cache():
     """Load all caches from disk (no DB contact)."""
-    global POLICY_MASTER_CACHE, POLICY_HISTORY_CACHE, RISK_CACHE, TRANSACTION_TYPE_CACHE, PET_RISK_PET_CACHE, DEFINED_LIST_DETAIL_CACHE
+    global POLICY_MASTER_CACHE, POLICY_HISTORY_CACHE, RISK_CACHE, TRANSACTION_TYPE_CACHE, PET_RISK_PET_CACHE, DEFINED_LIST_DETAIL_CACHE, PET_RISK_CACHE, PET_PROPOSER_CACHE, ADDRESS_CACHE
     if CACHE_FILE.exists():
         with open(CACHE_FILE, "rb") as f:
             data = pickle.load(f)
@@ -47,6 +53,9 @@ def load_static_cache():
             TRANSACTION_TYPE_CACHE = data.get("TRANSACTION_TYPE_CACHE", {})
             PET_RISK_PET_CACHE = data.get("PET_RISK_PET_CACHE", {})
             DEFINED_LIST_DETAIL_CACHE = data.get("DEFINED_LIST_DETAIL_CACHE", {})
+            PET_RISK_CACHE = data.get("PET_RISK_CACHE", {})
+            PET_PROPOSER_CACHE = data.get("PET_PROPOSER_CACHE", {})
+            ADDRESS_CACHE = data.get("ADDRESS_CACHE", {})
         print(f"✅ Loaded cache from {CACHE_FILE}")
     else:
         print("⚠️ No cache file found — run refresh_static_cache() once first.")
@@ -60,10 +69,10 @@ def load_static_data():
     All caches are stored in a consistent flat format (dicts keyed by ID)
     so they can be easily converted to DataFrames.
     """
-    from base.models import PolicyMaster, PolicyHistory, Risk, TransactionType, PetRiskPet, DefinedListDetail
+    from base.models import PolicyMaster, PolicyHistory, Risk, TransactionType, PetRiskPet, DefinedListDetail, PetRisk, PetProposer, Address
     print("🔄 Loading static data from database...")
 
-    global POLICY_MASTER_CACHE, POLICY_HISTORY_CACHE, RISK_CACHE, TRANSACTION_TYPE_CACHE, PET_RISK_PET_CACHE, DEFINED_LIST_DETAIL_CACHE
+    global POLICY_MASTER_CACHE, POLICY_HISTORY_CACHE, RISK_CACHE, TRANSACTION_TYPE_CACHE, PET_RISK_PET_CACHE, DEFINED_LIST_DETAIL_CACHE, PET_RISK_CACHE, PET_PROPOSER_CACHE, ADDRESS_CACHE
 
     # Load Tables (flat dict keyed by ID)
     
@@ -73,6 +82,9 @@ def load_static_data():
     TRANSACTION_TYPE_CACHE = {tt.transaction_type_id: tt for tt in TransactionType.objects.using("default").all()}
     PET_RISK_PET_CACHE = {prp.pet_risk_pet_id: prp for prp in PetRiskPet.objects.using("default").all()}
     DEFINED_LIST_DETAIL_CACHE = {dld.defined_list_detail_id: dld for dld in DefinedListDetail.objects.using("default").all()}
+    PET_RISK_CACHE = {pr.risk_id: pr for pr in PetRisk.objects.using("default").all()}
+    PET_PROPOSER_CACHE = {pp.pet_proposer_id: pp for pp in PetProposer.objects.using("default").all()}
+    ADDRESS_CACHE = {a.address_id: a for a in Address.objects.using("default").all()}
 
     print(f"✅ Loaded {len(POLICY_MASTER_CACHE)} PolicyMaster records")
     print(f"✅ Loaded {len(POLICY_HISTORY_CACHE)} PolicyHistory records")
@@ -80,3 +92,6 @@ def load_static_data():
     print(f"✅ Loaded {len(TRANSACTION_TYPE_CACHE)} TransactionType records")
     print(f"✅ Loaded {len(PET_RISK_PET_CACHE)} PetRiskPet records")
     print(f"✅ Loaded {len(DEFINED_LIST_DETAIL_CACHE)} DefinedListDetail records")
+    print(f"✅ Loaded {len(PET_RISK_CACHE)} PetRisk records")
+    print(f"✅ Loaded {len(PET_PROPOSER_CACHE)} PetProposer records")
+    print(f"✅ Loaded {len(ADDRESS_CACHE)} Address records")

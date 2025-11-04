@@ -76,6 +76,35 @@ class DefinedListDetail(models.Model):
         db_table = 'DefinedListDetail'
 
 
+class PetRisk(models.Model):
+    risk_id = models.IntegerField(db_column="RiskID", primary_key=True)
+    pet_proposer_id = models.IntegerField(db_column="PetProposerID")
+    pet_cover_level_dldid = models.IntegerField(db_column="PetCoverLevelDLDID")
+
+    class Meta:
+        managed = False
+        db_table = 'PetRisk'
+
+class PetProposer(models.Model):
+    pet_proposer_id = models.IntegerField(db_column="PetProposerID", primary_key=True)
+    address_id = models.IntegerField(db_column="AddressID")
+    title_dldid = models.IntegerField(db_column="TitleDLDID")
+    ph_dob = models.DateField(db_column="DateOfBirth")
+
+    class Meta:
+        managed = False
+        db_table = 'PetProposer'
+
+class Address(models.Model):
+    address_id = models.IntegerField(db_column="AddressID", primary_key=True)
+    postcode = models.CharField(db_column="PostCode", max_length=12)
+
+    class Meta:
+        managed = False
+        db_table = 'Address'
+
+
+
 class PetRates(models.Model):
     PET_CHOICES = [
         ('cat', 'Cat'),
