@@ -2,9 +2,8 @@
 
 import pickle
 from pathlib import Path
-from datetime import datetime
-from django.db.models import Value
-from django.db import connection
+from django.db.models import Q
+from collections import defaultdict
 
 CACHE_FILE = Path(__file__).resolve().parent / "policy_cache.pkl"
 
@@ -18,6 +17,7 @@ DEFINED_LIST_DETAIL_CACHE = {}
 PET_RISK_CACHE = {}
 PET_PROPOSER_CACHE = {}
 ADDRESS_CACHE = {}
+SCHEME_QUOTE_RESULT_COMMENT_CACHE = {}  # will store filtered comments keyed by ID
 
 # -------------------------
 # Save cache to disk
@@ -35,6 +35,7 @@ def save_static_cache():
             "PET_RISK_CACHE": PET_RISK_CACHE,
             "PET_PROPOSER_CACHE": PET_PROPOSER_CACHE,
             "ADDRESS_CACHE": ADDRESS_CACHE,
+            "SCHEME_QUOTE_RESULT_COMMENT_CACHE": SCHEME_QUOTE_RESULT_COMMENT_CACHE,
         }, f)
     print(f"✅ Saved cache to {CACHE_FILE}")
 
@@ -43,7 +44,10 @@ def save_static_cache():
 # -------------------------
 def load_static_cache():
     """Load all caches from disk (no DB contact)."""
-    global POLICY_MASTER_CACHE, POLICY_HISTORY_CACHE, RISK_CACHE, TRANSACTION_TYPE_CACHE, PET_RISK_PET_CACHE, DEFINED_LIST_DETAIL_CACHE, PET_RISK_CACHE, PET_PROPOSER_CACHE, ADDRESS_CACHE
+    global POLICY_MASTER_CACHE, POLICY_HISTORY_CACHE, RISK_CACHE, TRANSACTION_TYPE_CACHE
+    global PET_RISK_PET_CACHE, DEFINED_LIST_DETAIL_CACHE, PET_RISK_CACHE, PET_PROPOSER_CACHE
+    global ADDRESS_CACHE, SCHEME_QUOTE_RESULT_COMMENT_CACHE
+
     if CACHE_FILE.exists():
         with open(CACHE_FILE, "rb") as f:
             data = pickle.load(f)
@@ -56,26 +60,31 @@ def load_static_cache():
             PET_RISK_CACHE = data.get("PET_RISK_CACHE", {})
             PET_PROPOSER_CACHE = data.get("PET_PROPOSER_CACHE", {})
             ADDRESS_CACHE = data.get("ADDRESS_CACHE", {})
+            SCHEME_QUOTE_RESULT_COMMENT_CACHE = data.get("SCHEME_QUOTE_RESULT_COMMENT_CACHE", {})
         print(f"✅ Loaded cache from {CACHE_FILE}")
     else:
-        print("⚠️ No cache file found — run refresh_static_cache() once first.")
+        print("⚠️ No cache file found — run load_static_data() and save_static_cache() once first.")
 
 # -------------------------
 # Load from DB (initial load)
 # -------------------------
 def load_static_data():
     """
-    Load caches from database.
+    Load caches from the database.
     All caches are stored in a consistent flat format (dicts keyed by ID)
     so they can be easily converted to DataFrames.
     """
-    from base.models import PolicyMaster, PolicyHistory, Risk, TransactionType, PetRiskPet, DefinedListDetail, PetRisk, PetProposer, Address
+    from base.models import (
+        PolicyMaster, PolicyHistory, Risk, TransactionType, PetRiskPet,
+        DefinedListDetail, PetRisk, PetProposer, Address, SchemeQuoteResultComment
+    )
     print("🔄 Loading static data from database...")
 
-    global POLICY_MASTER_CACHE, POLICY_HISTORY_CACHE, RISK_CACHE, TRANSACTION_TYPE_CACHE, PET_RISK_PET_CACHE, DEFINED_LIST_DETAIL_CACHE, PET_RISK_CACHE, PET_PROPOSER_CACHE, ADDRESS_CACHE
+    global POLICY_MASTER_CACHE, POLICY_HISTORY_CACHE, RISK_CACHE, TRANSACTION_TYPE_CACHE
+    global PET_RISK_PET_CACHE, DEFINED_LIST_DETAIL_CACHE, PET_RISK_CACHE, PET_PROPOSER_CACHE
+    global ADDRESS_CACHE, SCHEME_QUOTE_RESULT_COMMENT_CACHE
 
     # Load Tables (flat dict keyed by ID)
-    
     POLICY_MASTER_CACHE = {pm.policy_master_id: pm for pm in PolicyMaster.objects.using("default").all()}
     POLICY_HISTORY_CACHE = {ph.policy_history_id: ph for ph in PolicyHistory.objects.using("default").all()}
     RISK_CACHE = {r.risk_id: r for r in Risk.objects.using("default").all()}
@@ -86,6 +95,19 @@ def load_static_data():
     PET_PROPOSER_CACHE = {pp.pet_proposer_id: pp for pp in PetProposer.objects.using("default").all()}
     ADDRESS_CACHE = {a.address_id: a for a in Address.objects.using("default").all()}
 
+    # Get IDs for join filter
+    policy_ids = set(PolicyHistory.objects.using("default").values_list('scheme_quote_result_id', flat=True))
+
+    # Load filtered SchemeQuoteResultComment cache
+    SCHEME_QUOTE_RESULT_COMMENT_CACHE.clear()
+    SCHEME_QUOTE_RESULT_COMMENT_CACHE.update({
+        sqrc.scheme_quote_result_comment_id: sqrc
+        for sqrc in SchemeQuoteResultComment.objects.using("default").filter(
+            Q(comment_text__icontains="Belongs to proposer"),
+            scheme_quote_result_id__in=policy_ids
+        )
+    })
+
     print(f"✅ Loaded {len(POLICY_MASTER_CACHE)} PolicyMaster records")
     print(f"✅ Loaded {len(POLICY_HISTORY_CACHE)} PolicyHistory records")
     print(f"✅ Loaded {len(RISK_CACHE)} Risk records")
@@ -95,3 +117,4 @@ def load_static_data():
     print(f"✅ Loaded {len(PET_RISK_CACHE)} PetRisk records")
     print(f"✅ Loaded {len(PET_PROPOSER_CACHE)} PetProposer records")
     print(f"✅ Loaded {len(ADDRESS_CACHE)} Address records")
+    print(f"✅ Loaded {len(SCHEME_QUOTE_RESULT_COMMENT_CACHE)} Scheme Quote Result Comment records")

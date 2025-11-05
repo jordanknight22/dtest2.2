@@ -41,6 +41,7 @@ factors = [
     {'name': 'Pre-existing', 'url': 'pre_existing'},
     {'name': 'Aggressive', 'url': 'aggressive'},
     {'name': 'Re-rated policies', 'url': 're_rate_policies'},
+    {'name': 'test', 'url': 'test'},
 ]
 
 cover_limits = {
@@ -422,13 +423,16 @@ def re_rate_policies(request):
 
     df_history = pd.DataFrame([{
         "policy_master_id": h.policy_master_id,
-        "transaction_type_id": getattr(h, "transaction_type_id"),
-        "risk_id": getattr(h, "risk_id")
+        "scheme_quote_result_id": h.scheme_quote_result_id,
+        "transaction_type_id": h.transaction_type_id,
+        "risk_id": h.risk_id,
+        "effective_date": h.effective_date,
+        "gwp": h.gwp 
     } for h in static_data.POLICY_HISTORY_CACHE.values()])
 
     df_tt = pd.DataFrame([{
         "transaction_type_id": tt.transaction_type_id,
-        "transaction_name": getattr(tt, "transaction_name")
+        "transaction_name": tt.transaction_name
     } for tt in static_data.TRANSACTION_TYPE_CACHE.values()])
 
     df_risk = pd.DataFrame([{
@@ -438,21 +442,28 @@ def re_rate_policies(request):
     
     df_prp = pd.DataFrame([{
         "pet_risk_pet_id": prp.pet_risk_pet_id,
-        "pet_name": getattr(prp, "pet_name"),
-        "risk_id": getattr(prp, "risk_id"),
-        "pet_type_dldid": getattr(prp, "pet_type_dldid"),
-        "pet_sub_type_dldid": getattr(prp, "pet_sub_type_dldid"),
-        "breed_dldid": getattr(prp, "breed_dldid"),
-        "size_dldid": getattr(prp, "size_dldid"),
-        "gender_dldid": getattr(prp, "gender_dldid"),
-        "cost_of_pet": getattr(prp, "cost_of_pet"),
-        "pet_dob": getattr(prp, "pet_dob"),
+        "pet_name": prp.pet_name,
+        "risk_id": prp.risk_id,
+        "pet_type_dldid": prp.pet_type_dldid,
+        "pet_sub_type_dldid": prp.pet_sub_type_dldid,
+        "breed_dldid": prp.breed_dldid,
+        "size_dldid": prp.size_dldid,
+        "gender_dldid": prp.gender_dldid,
+        "cost_of_pet": prp.cost_of_pet,
+        "pet_dob": prp.pet_dob,
+        "pet_name": prp.pet_name,
+        "prn": prp.prn,
+        "neutered": prp.neutered,
+        "chipped": prp.chipped,
+        "vaccinations": prp.vaccinations,
+        "pre_existing": prp.pre_existing,
+        "aggressive": prp.aggressive,
     } for prp in static_data.PET_RISK_PET_CACHE.values()])
 
     df_dld = pd.DataFrame([{
         "dld_id": dld.defined_list_detail_id,
-        "dld_name": getattr(dld, "dld_name"),
-        "unique_id": getattr(dld, "unique_id")
+        "dld_name": dld.dld_name,
+        "unique_id": dld.unique_id
     } for dld in static_data.DEFINED_LIST_DETAIL_CACHE.values()])
     
     df_dld["Item"] = (
@@ -461,23 +472,24 @@ def re_rate_policies(request):
         .str.replace("Cat", "PetSub", regex=False)
         .str.replace("Dog", "PetSub", regex=False)
         .str.replace("PetSubBreeds", "Breed", regex=False)
+        .str.lower()
     )
 
     df_pr = pd.DataFrame([{
         "risk_id": pr.risk_id,
-        "pet_proposer_id": getattr(pr, "pet_proposer_id"),
-        "pet_cover_level_dldid": getattr(pr, "pet_cover_level_dldid"),
+        "pet_proposer_id": pr.pet_proposer_id,
+        "pet_cover_level_dldid": pr.pet_cover_level_dldid
     } for pr in static_data.PET_RISK_CACHE.values()])
     
     df_pp = pd.DataFrame([{
         "pet_proposer_id": pp.pet_proposer_id,
-        "address_id": getattr(pp, "address_id"),
-        "ph_dob": getattr(pp, "ph_dob"),
+        "address_id": pp.address_id,
+        "ph_dob": pp.ph_dob
     } for pp in static_data.PET_PROPOSER_CACHE.values()])
 
     df_a = pd.DataFrame([{
         "address_id": a.address_id,
-        "postcode": getattr(a, "postcode")
+        "postcode": a.postcode
     } for a in static_data.ADDRESS_CACHE.values()])
 
     # Pull in Cover Level Name and proposer info
@@ -495,7 +507,16 @@ def re_rate_policies(request):
 
     # Map the DLD ID columns to readable "Item" types
     melted_prp = df_prp.melt(
-        id_vars=["pet_risk_pet_id", "risk_id"],
+        id_vars=[
+            "pet_risk_pet_id", 
+            "risk_id", 
+            "pet_name", 
+            "neutered", 
+            "aggressive", 
+            "pre_existing",
+            "chipped",
+            "vaccinations"
+        ],
         value_vars=[
             "pet_type_dldid",
             "pet_sub_type_dldid",
@@ -507,6 +528,8 @@ def re_rate_policies(request):
         value_name="dld_id"
     )
 
+    melted_prp.to_csv("melted_prp_export.csv", index=False)
+
     # Join the DLD table to the PRP one
     melted_merge = melted_prp.merge(
         df_dld, 
@@ -516,11 +539,32 @@ def re_rate_policies(request):
 
     # Pivot the table
     pivoted_merge = melted_merge.pivot_table(
-        index=["pet_risk_pet_id", "risk_id"],
+        index=[
+            "pet_risk_pet_id", 
+            "risk_id",
+            "pet_name",
+            "neutered", 
+            "aggressive", 
+            "pre_existing",
+            "chipped",
+            "vaccinations"
+        ],
         columns="Item",
         values="dld_name",
         aggfunc="first"
     ).reset_index()
+
+    # Premium per pet
+    df_sqrc = pd.DataFrame([{
+        "scheme_quote_result_comment_id": sqrc.scheme_quote_result_comment_id,
+        "scheme_quote_result_id": sqrc.scheme_quote_result_id,
+        "comment_text": sqrc.comment_text,
+        "prem_per_pet": sqrc.premium_total,
+    } for sqrc in static_data.SCHEME_QUOTE_RESULT_COMMENT_CACHE.values()])
+
+    df_sqrc = df_sqrc[df_sqrc["comment_text"].str.contains("Belongs", case=False)]
+    df_sqrc["pet_name"] = df_sqrc["comment_text"].str.extract(r"^(.*?)\s*Belongs to proposer", expand=False).str.strip()
+    df_sqrc = df_sqrc[["scheme_quote_result_id", "pet_name", "prem_per_pet"]]
 
     # Join the tables
     df_merged = df_master.merge(df_history, how="inner", on="policy_master_id")
@@ -528,9 +572,10 @@ def re_rate_policies(request):
     df_merged = df_merged.merge(df_tt, how="inner", on="transaction_type_id")
     df_merged = df_merged.merge(pivoted_merge, how="inner", on="risk_id")
     df_merged = df_merged.merge(df_pr_merged, how="inner", on="risk_id")
+    df_merged = df_merged.merge(df_sqrc, how="inner", on=["scheme_quote_result_id", "pet_name"])
 
     # Reformatting
-    df_merged["PetType"] = df_merged["PetType"].str.lower()
+    df_merged["pettype"] = df_merged["pettype"].str.lower()
     df_merged["scheme"] = df_merged["scheme"].str.lower()
     df_merged["postcode"] = (
         df_merged['postcode']
@@ -539,8 +584,18 @@ def re_rate_policies(request):
         .str.lower()
         .str.extract(r'^([a-z]{1,2})', expand=False)
     )
+    df_merged["gender_neutered"] = (
+        df_merged["gender"].astype(str) + ": " + df_merged["neutered"]
+        .astype(str)
+        .str.lower()
+    )
 
     df_merged["copay"] = df_merged["copay"].map({1: "yes", 2: "no"})
+    df_merged["pre_existing"] = df_merged["pre_existing"].map({1: "yes", 0: "no"})
+    df_merged["aggressive"] = df_merged["aggressive"].map({1: "yes", 0: "no"})
+    df_merged["chipped"] = df_merged["chipped"].map({1: "yes", 0: "no"})
+    df_merged["vaccinations"] = df_merged["vaccinations"].map({1: "yes", 0: "no"})
+    
 
     # Filter NB / REN only
     df_merged = df_merged[
@@ -552,12 +607,11 @@ def re_rate_policies(request):
     all_rates = PetRates.objects.all()
     df_rates = pd.DataFrame(list(all_rates.values()))
     df_rates["scheme"] = df_rates["scheme"].replace("_", " ", regex=False)
-    df_rates.to_csv("df_rates_export.csv", index=False)
     
     # Base Rates
     df_merged["base_rate"] = df_merged.apply(
         lambda row: df_rates[
-            (df_rates["pet_type"] == row["PetType"]) &
+            (df_rates["pet_type"] == row["pettype"]) &
             (df_rates["scheme"] == row["scheme"]) &
             (df_rates["factor"] == "base_rate")
         ]['rate'].values[0], axis=1
@@ -566,7 +620,7 @@ def re_rate_policies(request):
     # Limit
     df_merged["limit"] = df_merged.apply(
         lambda row: df_rates[
-            (df_rates["pet_type"] == row["PetType"]) &
+            (df_rates["pet_type"] == row["pettype"]) &
             (df_rates["scheme"] == row["scheme"])
         ]['limit'].values[0], axis=1
     )
@@ -574,20 +628,25 @@ def re_rate_policies(request):
     # Remaining factors
     factors = {
         "copay_factor": ("copay", "copay"),
-        "postcode_factor": ("postcode", "postcode")
+        "postcode_factor": ("postcode", "postcode"),
+        "chipped_factor": ("chipped", "chipped"),
+        "vaccinations_factor": ("vaccinations", "vaccinations"),
+        "pre_existing_factor": ("pre_existing", "pre_existing"),
+        "aggressive_factor": ("aggressive", "aggressive"),
+        # "neutered_gender_factor": ("neutered_gender", "neutered_gender"),
     }
 
     for new_col, (factor_name, option_col) in factors.items():
         df_merged[new_col] = df_merged.apply(
             lambda row: (
                 df_rates[
-                    (df_rates["pet_type"] == row["PetType"]) &
+                    (df_rates["pet_type"] == row["pettype"]) &
                     (df_rates["scheme"] == row["scheme"]) &
                     (df_rates["factor"] == factor_name) &
                     (df_rates["option"] == row[option_col])
                 ]["rate"].values[0]
                 if not df_rates[
-                    (df_rates["pet_type"] == row["PetType"]) &
+                    (df_rates["pet_type"] == row["pettype"]) &
                     (df_rates["scheme"] == row["scheme"]) &
                     (df_rates["factor"] == factor_name) &
                     (df_rates["option"] == row[option_col])
@@ -598,11 +657,16 @@ def re_rate_policies(request):
         )
 
     print(df_merged)
-    
+    df_merged.to_csv("df_merged_export.csv", index=False)
 
     # Convert DataFrame to list of dicts for template rendering
     policies = df_merged.to_dict(orient="records")
 
 
     return render(request, "base/rates/re_rate_policies.html", {"policies": policies})
+
+
+def test(request):
+
+    return render(request, "base/rates/test.html")
 

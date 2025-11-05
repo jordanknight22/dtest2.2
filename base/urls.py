@@ -23,4 +23,5 @@ urlpatterns = [
     path('rates/pre_existing/', views.pre_existing, name='pre_existing'),
     path('rates/aggressive/', views.aggressive, name='aggressive'),
     path('rates/re_rate_policies/', views.re_rate_policies, name='re_rate_policies'),
+    path('rates/test/', views.test, name='test'),
 ]

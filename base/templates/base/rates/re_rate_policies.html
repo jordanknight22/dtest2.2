@@ -13,6 +13,7 @@
                 <th>Policy Master ID</th>
                 <th>Policy Number</th>
                 <th>Transaction Name</th>
+                <th>Inception Date</th>
                 <th>Pet Type</th>
                 <th>Scheme</th>
                 <th>Breed</th>
@@ -20,6 +21,8 @@
                 <th>Postcode</th>
                 <th>Policyholder Age</th>
                 <th>Co-Insurance</th>
+                <th>Current Premium Per Pet</th>
+                <th>Current Policy GWP</th>
             </tr>
         </thead>
         <tbody>
@@ -28,6 +31,7 @@
                 <td>{{ policy.policy_master_id }}</td>
                 <td>{{ policy.policy_number }}</td>
                 <td>{{ policy.transaction_name }}</td>
+                <td>{{ policy.effective_date }} </td>
                 <td>{{ policy.PetType }}</td>
                 <td>{{ policy.scheme }}</td>
                 <td>{{ policy.Breed }}</td>
@@ -35,6 +39,8 @@
                 <td>{{ policy.postcode }}</td>
                 <td>{{ policy.ph_age }}</td>
                 <td>{{ policy.copay }}</td>
+                <td>{{ policy.prem_per_pet }}</td>
+                <td>{{ policy.gwp }}</td>
             </tr>
             {% endfor %}
         </tbody>

@@ -61,6 +61,13 @@ class PetRiskPet(models.Model):
     cost_of_pet = models.IntegerField(db_column="CostofPet")
     pet_dob = models.DateField(db_column="DateofBirth")
     pet_name = models.CharField(db_column="Name", max_length=50)
+    prn = models.IntegerField(db_column="PRN")
+    neutered = models.IntegerField(db_column="HasBeenNeutered")
+    chipped = models.IntegerField(db_column="HasBeenChipped")
+    pre_existing = models.IntegerField(db_column="HasExistingMedicalConditions")
+    vaccinations = models.IntegerField(db_column="HasUpToDateVaccinations")
+    aggressive = models.IntegerField(db_column="HasAttacked")
+    proposer_owns_pet = models.IntegerField(db_column="ProposerOwnsPet")
 
     class Meta:
         managed = False
@@ -103,6 +110,17 @@ class Address(models.Model):
         managed = False
         db_table = 'Address'
 
+class SchemeQuoteResultComment(models.Model):
+    scheme_quote_result_comment_id = models.IntegerField(db_column="SchemeQuoteResultCommentID", primary_key=True)
+    scheme_quote_result_id = models.IntegerField(db_column="SchemeQuoteResultID")
+    comment_text = models.CharField(db_column="CommentText", max_length=50)
+    order = models.IntegerField(db_column="Order")
+    premium_total = models.FloatField(db_column="PremiumTotal")
+    loading_value = models.FloatField(db_column="LoadingValue")
+
+    class Meta:
+        managed = False
+        db_table = 'SchemeQuoteResultComment'
 
 
 class PetRates(models.Model):
