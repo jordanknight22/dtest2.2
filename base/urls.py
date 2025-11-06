@@ -22,6 +22,10 @@ urlpatterns = [
     path('rates/vaccinations/', views.vaccinations, name='vaccinations'),
     path('rates/pre_existing/', views.pre_existing, name='pre_existing'),
     path('rates/aggressive/', views.aggressive, name='aggressive'),
-    path('rates/re_rate_policies/', views.re_rate_policies, name='re_rate_policies'),
+    path('rates/is_pet_yours/', views.is_pet_yours, name='is_pet_yours'),
+    path('rates/uk_resident/', views.uk_resident, name='uk_resident'),
+    path('rates/kept_at_address/', views.kept_at_address, name='kept_at_address'),
+    path('rates/trade_business/', views.trade_business, name='trade_business'),
+    path('rates/re_rated_policies/', views.re_rated_policies, name='re_rated_policies'),
     path('rates/test/', views.test, name='test'),
 ]

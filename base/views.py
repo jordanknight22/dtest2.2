@@ -3,15 +3,27 @@ from django.shortcuts import render
 from .models import *
 from collections import defaultdict
 from django.views.decorators.http import require_GET
-from django.db.models import Q
 from django.http import JsonResponse
 from .utils import *
 import json
 import os
-import re
 from base import static_data
 
 rating_guide =  r'C:\Users\jorda\OneDrive\Desktop\SP Rating Guide v38 - Multiple changes.xlsx'
+
+# Div0 function
+def div0(numerator, denominator):
+    if isinstance(numerator, pd.Series) or isinstance(denominator, pd.Series):
+        # element-wise operation for pandas
+        denominator = denominator.replace(0, pd.NA)
+        result = numerator / denominator
+        return result.fillna(0)
+    else:
+        # simple scalar case
+        try:
+            return numerator / denominator if denominator not in (0, None) else 0
+        except TypeError:
+            return 0
 
 # Create your views here.
 rooms = [
@@ -40,7 +52,11 @@ factors = [
     {'name': 'Vaccinations', 'url': 'vaccinations'},
     {'name': 'Pre-existing', 'url': 'pre_existing'},
     {'name': 'Aggressive', 'url': 'aggressive'},
-    {'name': 'Re-rated policies', 'url': 're_rate_policies'},
+    {'name': 'Is Pet yours?', 'url': 'is_pet_yours'},
+    {'name': 'UK Resident', 'url': 'uk_resident'},
+    {'name': 'Kept at Address', 'url': 'kept_at_address'},
+    {'name': 'Trade or Business', 'url': 'trade_business'},
+    {'name': 'Re-rated policies', 'url': 're_rated_policies'},
     {'name': 'test', 'url': 'test'},
 ]
 
@@ -101,6 +117,10 @@ def all_rates():
         ("Vaccinations", "Are Vaccines up to date?", None, "vaccinations", None),
         ("Pre-existing", "Any pre-existing medical conditions?", None, "pre_existing", None),
         ("Aggressive", "Ever attacked, bitten or shown aggressive tendencies?", None, "aggressive", None),
+        ("Is pet yours", "Is the animal your pet?", None, "is_pet_yours", None),
+        ("UK resident", "Are you a full time UK resident?", None, "uk_resident", None),
+        ("Kept at address", "Is the animal kept at the address given?", None, "kept_at_address", None),
+        ("Trade or business", "Ever been used/connected with trade or business?", None, "trade_business", None),
         ("Postcode", "Postcode Area", None, "postcode", None),
         ("Pet Price", "Purchase Price", None, "pet_price", None),
         ("Policyholder Age", "Policyholder Age in Years", None, "ph_age", None),
@@ -320,6 +340,30 @@ def aggressive(request):
         "nested_rates": nested_rates
     })
 
+def is_pet_yours(request):
+    nested_rates = get_rates_from_db("is_pet_yours")
+    return render(request, "base/rates/is_pet_yours.html", {
+        "nested_rates": nested_rates
+    })
+
+def uk_resident(request):
+    nested_rates = get_rates_from_db("uk_resident")
+    return render(request, "base/rates/uk_resident.html", {
+        "nested_rates": nested_rates
+    })
+
+def kept_at_address(request):
+    nested_rates = get_rates_from_db("kept_at_address")
+    return render(request, "base/rates/kept_at_address.html", {
+        "nested_rates": nested_rates
+    })
+
+def trade_business(request):
+    nested_rates = get_rates_from_db("trade_business")
+    return render(request, "base/rates/trade_business.html", {
+        "nested_rates": nested_rates
+    })
+
 def prem_calc(request):
     # Distinct pet types
     pet_types = PetRates.objects.values_list('pet_type', flat=True).distinct()
@@ -408,7 +452,7 @@ def get_pet_rates(request):
         "pet_age_rate": pet_age_rate
     })
 
-def re_rate_policies(request):
+def re_rated_policies(request):
     # Load cached data from disk (no DB queries)
     static_data.load_static_cache()
 
@@ -427,7 +471,8 @@ def re_rate_policies(request):
         "transaction_type_id": h.transaction_type_id,
         "risk_id": h.risk_id,
         "effective_date": h.effective_date,
-        "gwp": h.gwp 
+        "gwp": h.gwp,
+        "adjustment_number": h.adjustment_number,
     } for h in static_data.POLICY_HISTORY_CACHE.values()])
 
     df_tt = pd.DataFrame([{
@@ -458,6 +503,7 @@ def re_rate_policies(request):
         "vaccinations": prp.vaccinations,
         "pre_existing": prp.pre_existing,
         "aggressive": prp.aggressive,
+        "is_pet_yours": prp.is_pet_yours,
     } for prp in static_data.PET_RISK_PET_CACHE.values()])
 
     df_dld = pd.DataFrame([{
@@ -484,7 +530,10 @@ def re_rate_policies(request):
     df_pp = pd.DataFrame([{
         "pet_proposer_id": pp.pet_proposer_id,
         "address_id": pp.address_id,
-        "ph_dob": pp.ph_dob
+        "ph_dob": pp.ph_dob,
+        "uk_resident": pp.uk_resident,
+        "kept_at_address": pp.kept_at_address,
+        "trade_business": pp.trade_business
     } for pp in static_data.PET_PROPOSER_CACHE.values()])
 
     df_a = pd.DataFrame([{
@@ -503,19 +552,25 @@ def re_rate_policies(request):
     df_pr_merged = df_pr_merged.merge(df_a, how="inner", on="address_id")
     
     # Remove columns not required
-    df_pr_merged = df_pr_merged[["risk_id", "dld_name", "ph_dob", "postcode"]].rename(columns={"dld_name": "scheme"})
+    df_pr_merged = df_pr_merged[[
+        "risk_id", "dld_name", "ph_dob", "postcode", "uk_resident", "kept_at_address","trade_business"
+        ]].rename(columns={"dld_name": "scheme"})
 
     # Map the DLD ID columns to readable "Item" types
     melted_prp = df_prp.melt(
         id_vars=[
             "pet_risk_pet_id", 
             "risk_id", 
-            "pet_name", 
+            "prn",
+            "pet_name",
+            "pet_dob",
+            "cost_of_pet",
             "neutered", 
             "aggressive", 
             "pre_existing",
             "chipped",
-            "vaccinations"
+            "vaccinations",
+            "is_pet_yours"
         ],
         value_vars=[
             "pet_type_dldid",
@@ -527,8 +582,6 @@ def re_rate_policies(request):
         var_name="item_type",
         value_name="dld_id"
     )
-
-    melted_prp.to_csv("melted_prp_export.csv", index=False)
 
     # Join the DLD table to the PRP one
     melted_merge = melted_prp.merge(
@@ -543,11 +596,15 @@ def re_rate_policies(request):
             "pet_risk_pet_id", 
             "risk_id",
             "pet_name",
+            "prn",
+            "pet_dob",
+            "cost_of_pet",
             "neutered", 
             "aggressive", 
             "pre_existing",
             "chipped",
-            "vaccinations"
+            "vaccinations",
+            "is_pet_yours"
         ],
         columns="Item",
         values="dld_name",
@@ -574,6 +631,14 @@ def re_rate_policies(request):
     df_merged = df_merged.merge(df_pr_merged, how="inner", on="risk_id")
     df_merged = df_merged.merge(df_sqrc, how="inner", on=["scheme_quote_result_id", "pet_name"])
 
+    # Multipet calc
+    df_merged["max_prn"] = df_merged.groupby(["policy_number", "adjustment_number"])["prn"].transform("max")
+    df_merged["multipet"] = df_merged["max_prn"].apply(lambda x: "yes" if x > 1 else "no")
+
+    # GWP per pet calc
+    df_merged["total_combined_prem"] = df_merged.groupby(["policy_number", "adjustment_number"])["prem_per_pet"].transform("sum")
+    df_merged["gwp_per_pet"] = div0(df_merged["prem_per_pet"], df_merged["total_combined_prem"]) * df_merged["gwp"]
+
     # Reformatting
     df_merged["pettype"] = df_merged["pettype"].str.lower()
     df_merged["scheme"] = df_merged["scheme"].str.lower()
@@ -584,31 +649,98 @@ def re_rate_policies(request):
         .str.lower()
         .str.extract(r'^([a-z]{1,2})', expand=False)
     )
-    df_merged["gender_neutered"] = (
-        df_merged["gender"].astype(str) + ": " + df_merged["neutered"]
-        .astype(str)
-        .str.lower()
-    )
-
-    df_merged["copay"] = df_merged["copay"].map({1: "yes", 2: "no"})
-    df_merged["pre_existing"] = df_merged["pre_existing"].map({1: "yes", 0: "no"})
-    df_merged["aggressive"] = df_merged["aggressive"].map({1: "yes", 0: "no"})
-    df_merged["chipped"] = df_merged["chipped"].map({1: "yes", 0: "no"})
-    df_merged["vaccinations"] = df_merged["vaccinations"].map({1: "yes", 0: "no"})
+    df_merged["breed"] = df_merged["breed"].str.lower()
     
 
+    df_merged["copay"] = df_merged["copay"].map({1: "yes", 2: "no"})
+    df_merged["neutered"] = df_merged["neutered"].map({True: "yes", False: "no"})
+    df_merged["pre_existing"] = df_merged["pre_existing"].map({True: "yes", False: "no"})
+    df_merged["aggressive"] = df_merged["aggressive"].map({True: "yes", False: "no"})
+    df_merged["chipped"] = df_merged["chipped"].map({True: "yes", False: "no"})
+    df_merged["vaccinations"] = df_merged["vaccinations"].map({True: "yes", False: "no"})
+    df_merged["uk_resident"] = df_merged["uk_resident"].map({True: "yes", False: "no"})
+    df_merged["is_pet_yours"] = df_merged["is_pet_yours"].map({True: "yes", False: "no"})
+    df_merged["kept_at_address"] = df_merged["kept_at_address"].map({True: "yes", False: "no"})
+    df_merged["trade_business"] = df_merged["trade_business"].map({True: "yes", False: "no"})
+
+    df_merged["neutered_gender"] = (
+        df_merged["gender"].astype(str) + ": " + df_merged["neutered"].astype(str)
+    ).str.lower()
+    
     # Filter NB / REN only
     df_merged = df_merged[
         (df_merged["transaction_name"] == "New Business") | 
         (df_merged["transaction_name"] == "Renewal")  
     ]
 
+    # Policyholder Age (Years)
+    df_merged["ph_age"] = df_merged.apply(
+        lambda x: x["effective_date"].year - x["ph_dob"].year,
+        axis = 1 
+    )
+    ph_bins = [0, 19.999, 29.999, 39.999, 49.999, 59.999, 69.999, 79.999, 89.999, float("inf")]
+    df_merged["ph_age"] = pd.cut(
+        df_merged["ph_age"], 
+        bins=ph_bins, 
+        labels=ph_age_order, 
+        right=True, 
+        include_lowest=True
+    )
+
+    # Pet Age in months
+    df_merged["pet_age_mnths"] = df_merged.apply(
+        lambda x: (x["effective_date"].year - x["pet_dob"].year) * 12 + (x["effective_date"].month - x["pet_dob"].month),
+        axis = 1 
+    )
+    df_merged["pet_age"] = df_merged["pet_age_mnths"]
+
+    # Pet Age & Gender
+    pet_bins_1 = [0, 50, 100, float("inf")]
+    pet_labels_1 = ["1\u201350", "51\u2013100", "101+"]
+    df_merged["pet_age_mnths"] = pd.cut(
+        df_merged["pet_age_mnths"], 
+        bins=pet_bins_1, 
+        labels=pet_labels_1, 
+        right=True, 
+        include_lowest=True
+    )
+    df_merged["pet_age_gender"] = (
+        df_merged["gender"].astype(str) + ": " + df_merged["pet_age_mnths"].astype(str)
+    ).str.lower()
+
+    # Pet Age in Months
+    pet_bins_2 = [
+        0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,28,31,
+        34,37,40,43,46,48,54,60,66,72,78,84,90,96,102,108,114,120,126,132,138,
+        144,150,156,162,168,174,180,186,192,204,216,228,240,float("inf")
+    ]
+    df_merged["pet_age"] = pd.cut(
+        df_merged["pet_age"], 
+        bins=pet_bins_2, 
+        labels=pet_age_order, 
+        right=True, 
+        include_lowest=True
+    )
+
+    # Cost of Pet
+    pet_price_bins = [0, 75, 150, 300, 600, 1200, float("inf")]
+    df_merged["pet_price"] = pd.cut(
+        df_merged["cost_of_pet"],
+        bins = pet_price_bins,
+        labels = pet_price_order,
+        right=True,
+        include_lowest=True
+    )
+
     # Fetch the rates
     all_rates = PetRates.objects.all()
     df_rates = pd.DataFrame(list(all_rates.values()))
     df_rates["scheme"] = df_rates["scheme"].replace("_", " ", regex=False)
-    
-    # Base Rates
+  
+    # Exclude Champ policies for now
+    # df_merged = df_merged[~df_merged["scheme"].str.contains("Champ", case=False, na=False)]
+
+    # Base Rates  
     df_merged["base_rate"] = df_merged.apply(
         lambda row: df_rates[
             (df_rates["pet_type"] == row["pettype"]) &
@@ -625,15 +757,45 @@ def re_rate_policies(request):
         ]['limit'].values[0], axis=1
     )
 
+    # Breeds
+    df_merged["breed_factor"] = df_merged.apply(
+        lambda row: (
+            df_rates[
+                (df_rates["pet_type"] == row["pettype"]) &
+                (df_rates["scheme"] == row["scheme"]) &
+                ((df_rates["factor"] == "dog_breed") | (df_rates["factor"] == "cat_breed")) &
+                (df_rates["option"] == row["breed"])
+            ]['rate'].values[0]
+            if not df_rates[
+                (df_rates["pet_type"] == row["pettype"]) &
+                (df_rates["scheme"] == row["scheme"]) &
+                ((df_rates["factor"] == "dog_breed") | (df_rates["factor"] == "cat_breed")) &
+                (df_rates["option"] == row["breed"])
+            ].empty
+            else None # avoid IndexError if nothing matches
+        ),
+        axis=1
+    )
+
     # Remaining factors
     factors = {
-        "copay_factor": ("copay", "copay"),
-        "postcode_factor": ("postcode", "postcode"),
+        "pet_age_gender_factor": ("pet_age_gender", "pet_age_gender"),
+        "pet_age_factor": ("pet_age", "pet_age"),
+        "pet_price_factor": ("pet_price", "pet_price"),
+        "neutered_gender_factor": ("neutered_gender", "neutered_gender"),
         "chipped_factor": ("chipped", "chipped"),
         "vaccinations_factor": ("vaccinations", "vaccinations"),
         "pre_existing_factor": ("pre_existing", "pre_existing"),
         "aggressive_factor": ("aggressive", "aggressive"),
-        # "neutered_gender_factor": ("neutered_gender", "neutered_gender"),
+        "is_pet_yours_factor": ("is_pet_yours", "is_pet_yours"),
+        "postcode_factor": ("postcode", "postcode"),
+        "uk_resident_factor": ("uk_resident", "uk_resident"),
+        "kept_at_address_factor": ("kept_at_address", "kept_at_address"),
+        "trade_business_factor": ("trade_business", "trade_business"),
+        "ph_age_factor": ("ph_age", "ph_age"),
+        "copay_factor": ("copay", "copay"),
+        "multipet_factor": ("multipet", "multipet"),
+        
     }
 
     for new_col, (factor_name, option_col) in factors.items():
@@ -656,14 +818,25 @@ def re_rate_policies(request):
             axis=1
         )
 
+    df_merged["re_rated_gwp_per_pet"] = df_merged.eval(
+        "base_rate * pet_age_factor * pet_age_gender_factor * breed_factor * pet_price_factor *"
+        "neutered_gender_factor * chipped_factor * vaccinations_factor * pre_existing_factor *"
+        "aggressive_factor * is_pet_yours_factor * postcode_factor * uk_resident_factor *"
+        "kept_at_address_factor * trade_business_factor * ph_age_factor * copay_factor * multipet_factor"
+    )
+    df_merged["re_rated_gwp_per_pol"] = df_merged.groupby(
+        ["policy_number", "adjustment_number"]
+        )["re_rated_gwp_per_pet"].transform("sum")
+    
     print(df_merged)
-    df_merged.to_csv("df_merged_export.csv", index=False)
+    df_merged.to_csv(r'C:\Users\jorda\OneDrive\Desktop\df_merged_export.csv', index=False)
 
     # Convert DataFrame to list of dicts for template rendering
     policies = df_merged.to_dict(orient="records")
 
 
-    return render(request, "base/rates/re_rate_policies.html", {"policies": policies})
+    return render(request, "base/rates/re_rated_policies.html", {"policies": policies})
+
 
 
 def test(request):

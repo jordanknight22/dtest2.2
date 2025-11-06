@@ -21,7 +21,7 @@ class PolicyHistory(models.Model):
     policy_history_id = models.IntegerField(db_column='PolicyHistoryID', primary_key=True)
     policy_master_id = models.IntegerField(db_column='PolicyMasterID')
     risk_id = models.IntegerField(db_column='RiskID') 
-    adustment_number = models.IntegerField(db_column='AdjustmentNumber')
+    adjustment_number = models.IntegerField(db_column='AdjustmentNumber')
     creation_date = models.DateTimeField(db_column='CreationDate')
     effective_date = models.DateTimeField(db_column='EffectiveDate')
     scheme_quote_result_id = models.IntegerField(db_column='SchemeQuoteResultID')
@@ -67,7 +67,7 @@ class PetRiskPet(models.Model):
     pre_existing = models.IntegerField(db_column="HasExistingMedicalConditions")
     vaccinations = models.IntegerField(db_column="HasUpToDateVaccinations")
     aggressive = models.IntegerField(db_column="HasAttacked")
-    proposer_owns_pet = models.IntegerField(db_column="ProposerOwnsPet")
+    is_pet_yours = models.IntegerField(db_column="ProposerOwnsPet")
 
     class Meta:
         managed = False
@@ -97,6 +97,9 @@ class PetProposer(models.Model):
     address_id = models.IntegerField(db_column="AddressID")
     title_dldid = models.IntegerField(db_column="TitleDLDID")
     ph_dob = models.DateField(db_column="DateOfBirth")
+    uk_resident = models.IntegerField(db_column="UKResident")
+    kept_at_address = models.IntegerField(db_column="PetsKeptAtProposerAddress")
+    trade_business = models.IntegerField(db_column="UsedForBreedingOrConnectedToBusiness")
 
     class Meta:
         managed = False

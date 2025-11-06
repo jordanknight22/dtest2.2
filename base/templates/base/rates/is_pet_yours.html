@@ -1,0 +1,67 @@
+{% load custom_tags %}
+
+<a href="/rates">
+    <h1>Back</h1>
+</a>
+
+<hr>
+
+<table border="1" style="border-collapse: collapse; width: 100%; text-align: center;">
+    <thead>
+        <!-- Row 1: Pet Type -->
+        <tr>
+            <th>Pet Type</th>
+            {% for pet_type, schemes in nested_rates.items %}
+                <th colspan="{{ schemes|length }}">{{ pet_type|capfirst }}</th>
+            {% endfor %}
+        </tr>
+
+        <!-- Row 2: Scheme -->
+        <tr>
+            <th>Scheme</th>
+            {% for pet_type, schemes in nested_rates.items %}
+                {% for scheme, factors in schemes.items %}
+                    <th>{{ scheme|capfirst|cut:"_" }}</th>
+                {% endfor %}
+            {% endfor %}
+        </tr>
+
+        <!-- Row 3: Limit -->
+        <tr>
+            <th>Limit</th>
+            {% for pet_type, schemes in nested_rates.items %}
+                {% for scheme, factors in schemes.items %}
+                    <td>{{ factors|dict_key:"limit" }}</td>
+                {% endfor %}
+            {% endfor %}
+        </tr>
+    </thead>
+        <tr>
+            <th>Is the animal your pet?</th>
+        </tr>
+    <tbody>
+        <tr>
+            <th>No</th>
+            {% for pet_type, schemes in nested_rates.items %}
+                {% for scheme, factors in schemes.items %}
+                    <td>
+                        {% if factors|dict_key:"is_pet_yours"|dict_key:"no" == 999 %}
+                            Decline
+                        {% else %}
+                            {{ factors|dict_key:"is_pet_yours"|dict_key:"no"|floatformat:3 }}
+                        {% endif %}
+                    </td>
+                {% endfor %}
+            {% endfor %}
+        </tr>
+        <tr>
+            <th>Yes</th>
+            {% for pet_type, schemes in nested_rates.items %}
+                {% for scheme, factors in schemes.items %}
+                    <td>
+                        {{ factors|dict_key:"is_pet_yours"|dict_key:"yes"|floatformat:3 }}
+                    </td>
+                {% endfor %}
+            {% endfor %}
+        </tr>
+    </tbody>

@@ -33,6 +33,22 @@
                 "yes": 999,
                 "no": 1.0
             },
+            "is_pet_yours": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "uk_resident": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "kept_at_address": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "trade_business": {
+                "yes": 999,
+                "no": 1.0
+            },
             "postcode": {
                 "ab": 0.8699999999999999,
                 "al": 1.15,
@@ -587,6 +603,22 @@
                 "no": 1.0
             },
             "aggressive": {
+                "yes": 999,
+                "no": 1.0
+            },
+            "is_pet_yours": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "uk_resident": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "kept_at_address": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "trade_business": {
                 "yes": 999,
                 "no": 1.0
             },
@@ -1147,6 +1179,22 @@
                 "yes": 999,
                 "no": 1.0
             },
+            "is_pet_yours": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "uk_resident": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "kept_at_address": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "trade_business": {
+                "yes": 999,
+                "no": 1.0
+            },
             "postcode": {
                 "ab": 0.8699999999999999,
                 "al": 1.15,
@@ -1701,6 +1749,22 @@
                 "no": 1.0
             },
             "aggressive": {
+                "yes": 999,
+                "no": 1.0
+            },
+            "is_pet_yours": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "uk_resident": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "kept_at_address": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "trade_business": {
                 "yes": 999,
                 "no": 1.0
             },
@@ -2261,6 +2325,22 @@
                 "yes": 999,
                 "no": 1.0
             },
+            "is_pet_yours": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "uk_resident": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "kept_at_address": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "trade_business": {
+                "yes": 999,
+                "no": 1.0
+            },
             "postcode": {
                 "ab": 0.8699999999999999,
                 "al": 1.15,
@@ -2815,6 +2895,22 @@
                 "no": 1.0
             },
             "aggressive": {
+                "yes": 999,
+                "no": 1.0
+            },
+            "is_pet_yours": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "uk_resident": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "kept_at_address": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "trade_business": {
                 "yes": 999,
                 "no": 1.0
             },
@@ -3377,6 +3473,22 @@
                 "yes": 1.0,
                 "no": 1.0
             },
+            "is_pet_yours": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "uk_resident": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "kept_at_address": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "trade_business": {
+                "yes": 999,
+                "no": 1.0
+            },
             "postcode": {
                 "ab": 0.9321314664817704,
                 "al": 1.5,
@@ -3805,6 +3917,22 @@
             },
             "aggressive": {
                 "yes": 1.0,
+                "no": 1.0
+            },
+            "is_pet_yours": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "uk_resident": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "kept_at_address": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "trade_business": {
+                "yes": 999,
                 "no": 1.0
             },
             "postcode": {
@@ -4237,6 +4365,22 @@
                 "yes": 1.0,
                 "no": 1.0
             },
+            "is_pet_yours": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "uk_resident": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "kept_at_address": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "trade_business": {
+                "yes": 999,
+                "no": 1.0
+            },
             "postcode": {
                 "ab": 0.9321314664817704,
                 "al": 1.5,
@@ -4665,6 +4809,22 @@
             },
             "aggressive": {
                 "yes": 1.0,
+                "no": 1.0
+            },
+            "is_pet_yours": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "uk_resident": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "kept_at_address": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "trade_business": {
+                "yes": 999,
                 "no": 1.0
             },
             "postcode": {
@@ -5097,6 +5257,22 @@
                 "yes": 1.0,
                 "no": 1.0
             },
+            "is_pet_yours": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "uk_resident": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "kept_at_address": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "trade_business": {
+                "yes": 999,
+                "no": 1.0
+            },
             "postcode": {
                 "ab": 0.9321314664817704,
                 "al": 1.5,
@@ -5525,6 +5701,22 @@
             },
             "aggressive": {
                 "yes": 1.0,
+                "no": 1.0
+            },
+            "is_pet_yours": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "uk_resident": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "kept_at_address": {
+                "yes": 1.0,
+                "no": 999
+            },
+            "trade_business": {
+                "yes": 999,
                 "no": 1.0
             },
             "postcode": {
