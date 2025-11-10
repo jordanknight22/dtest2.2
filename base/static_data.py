@@ -35,7 +35,7 @@ def div0(numerator, denominator):
             return 0
 
 
-rating_guide =  r'C:\Users\jorda\OneDrive\Desktop\SP Rating Guide v38 - Multiple changes.xlsx'
+rating_guide =  r'C:\Users\jorda\OneDrive\Desktop\SP Rating Guide v40 - Breed changes.xlsx'
 
 pet_age_order = ['0','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16',
              '17','18','19','20','21','22','23','24–28','29–31','32–34','35–37','38–40',
@@ -54,7 +54,7 @@ CACHE_FILE = output_folder / "policy_cache.pkl"
 RE_RATED_FILE = output_folder / "df_merged.parquet"
 
 debugging_folder = Path(__file__).resolve().parent / "debugging"
-debug = "Yes"
+debug = "No"
 
 # -------------------------
 # In-memory caches
@@ -289,7 +289,13 @@ def re_rated_cache():
         "effective_date": h.effective_date,
         "gwp": h.gwp,
         "adjustment_number": h.adjustment_number,
+        "payment_schedule_id": h.payment_schedule_id,
+        "total_paid_by_customer": h.total_paid_by_customer
     } for h in POLICY_HISTORY_CACHE.values()])
+    df_history = df_history[
+        df_history["payment_schedule_id"].notna() |
+        (df_history["total_paid_by_customer"] != 0)
+    ]
     print(f"✅ Loaded cache from POLICY_HISTORY_CACHE: {(len(df_history))} rows")
 
     min_yoa = 2023
@@ -314,6 +320,9 @@ def re_rated_cache():
         "copay": r.copay
     } for r in RISK_CACHE.values()])
     print(f"✅ Loaded cache from RISK_CACHE: {(len(df_risk))} rows")
+
+    # Assume Non-Copay where NULL
+    df_risk["copay"] = df_risk["copay"].fillna(2)
     
     df_prp = pd.DataFrame([{
         "pet_risk_pet_id": prp.pet_risk_pet_id,
@@ -337,8 +346,10 @@ def re_rated_cache():
     } for prp in PET_RISK_PET_CACHE.values()])
     print(f"✅ Loaded cache from PET_RISK_PET_CACHE: {(len(df_prp))} rows")
 
-    # Assume null rows on Aggressive is FALSE
+    # Assume Aggressive is FALSE where NULL
     df_prp["aggressive"] = df_prp["aggressive"].fillna(False)
+    # Assume prn = 1 where NULL
+    df_prp["prn"] = df_prp["prn"].fillna(1)
 
     df_dld = pd.DataFrame([{
         "dld_id": dld.defined_list_detail_id,
@@ -372,6 +383,9 @@ def re_rated_cache():
         "trade_business": pp.trade_business
     } for pp in PET_PROPOSER_CACHE.values()])
     print(f"✅ Loaded cache from PET_PROPOSER_CACHE: {(len(df_pp))} rows")
+
+    # Assume Trade/Business is FALSE where NULL
+    df_pp["trade_business"] = df_pp["trade_business"].fillna(False)
 
     df_a = pd.DataFrame([{
         "address_id": a.address_id,
@@ -641,6 +655,8 @@ def re_rated_cache():
 
     # Merge breed factor
     df_merged = df_merged.merge(df_breed_rates, how="left", on=["pettype", "scheme", "breed"])
+    # Set factor to 999 and assume decline for breeds that cannot be matched to rating guide
+    df_merged["breed_factor"] = df_merged["breed_factor"].fillna(999)
     print("✅ Breed factor loaded.")
 
     # Now handle remaining factors
@@ -662,6 +678,10 @@ def re_rated_cache():
         "aggressive_factor * is_pet_yours_factor * postcode_factor * uk_resident_factor *"
         "kept_at_address_factor * trade_business_factor * ph_age_factor * copay_factor * multipet_factor"
     )
+
+    factor_cols = [f"{f}_factor" for f in factors] + ["breed_factor"]
+    df_merged["decline_flag"] = df_merged[factor_cols].eq(999).any(axis=1).map({True: "Y", False: "N"}) 
+
     df_merged["re_rated_gwp_per_pol"] = df_merged.groupby(
         ["policy_number", "adjustment_number"]
         )["re_rated_gwp_per_pet"].transform("sum")

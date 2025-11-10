@@ -27,6 +27,8 @@ class PolicyHistory(models.Model):
     scheme_quote_result_id = models.IntegerField(db_column='SchemeQuoteResultID')
     transaction_type_id = models.IntegerField(db_column='TransactionTypeID') 
     gwp = models.FloatField(db_column='CalculatedNetPremiumExclIPT')
+    payment_schedule_id = models.IntegerField(db_column='PaymentScheduleID')
+    total_paid_by_customer = models.FloatField(db_column='TotalPaidByCustomer')
 
     class Meta:
         managed = False

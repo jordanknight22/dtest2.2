@@ -36,6 +36,7 @@ rooms = [
     {'name': 'GWP Summary By YoA', 'url': 'gwp-summaries'},
     {'name': 'Full Policy List', 'url': 'policy_list'},
     {'name': 'Rates', 'url': 'rates'},
+    {'name': 'Quote Data', 'url': 'quote_data'}
 ]
 
 def home(request):
@@ -382,12 +383,208 @@ def re_rated_policies(request):
     # Load cached data from disk (no DB queries)
     static_data.load_re_rated_cache()
     df_merged = static_data.RE_RATED_CACHE
+    df_merged = df_merged[df_merged["decline_flag"] == "N"]
     print(df_merged)
 
     # Convert DataFrame to list of dicts for template rendering
     policies = df_merged.to_dict(orient="records")
 
     return render(request, "base/rates/re_rated_policies.html", {"policies": policies})
+
+
+def quote_data(request):
+    quotes =  r'C:\Users\jorda\OneDrive\Desktop\quotemasternov10.xlsx'
+    df_quotes = pd.read_excel(quotes, sheet_name="quotemasternov10", header=0)
+
+    print(df_quotes)
+
+    # FORMATTING RATING FACTORS
+    # Add S/M/L to crossbreed
+    def compute_breed(row):
+        pet_subtype = str(row.get("PetSubType", "")).lower()  # safe access
+        breed_code = str(row.get("BreedInstepCode", "")).lower()
+        size = str(row.get("Size", "")).lower()
+
+        if pet_subtype == "moggie":
+            return pet_subtype
+        elif pet_subtype in ["crossbreed", "mongrel"]:
+            return f"{breed_code}: {size}"
+        else:
+            return breed_code
+
+    df_quotes["breed"] = df_quotes.apply(compute_breed, axis=1)
+
+    df_quotes["gender"] = df_quotes["GenderInstepCode"].map({"M": "male", "F": "female"})
+
+    df_quotes["postcode"] = (
+        df_quotes['ProposerPostcode']
+        .astype(str)
+        .str.strip()
+        .str.lower()
+        .str.extract(r'^([a-z]{1,2})', expand=False)
+    )
+
+    df_quotes["neutered"] = df_quotes["HasBeenNeutered"].map({True: "yes", False: "no"})
+    df_quotes["pre_existing"] = "no"
+    df_quotes["aggressive"] = "no"
+    df_quotes["chipped"] = df_quotes["HasBeenChipped"].map({True: "yes", False: "no"})
+    df_quotes["vaccinations"] = "no"
+    df_quotes["uk_resident"] = "yes"
+    df_quotes["is_pet_yours"] = "yes"
+    df_quotes["kept_at_address"] = "yes"
+    df_quotes["trade_business"] = "no"
+
+    df_quotes["no_of_pets"] = df_quotes["SourceFile"].value_counts()
+    df_quotes["multipet"] = df_quotes["no_of_pets"].apply(lambda x: "yes" if x > 1 else "no")
+
+    df_quotes["neutered_gender"] = (
+        df_quotes["gender"].astype(str) + ": " + df_quotes["neutered"].astype(str)
+        ).str.lower()
+
+    # Policyholder Age (Years)
+    ph_bins = [0, 19.999, 29.999, 39.999, 49.999, 59.999, 69.999, 79.999, 89.999, float("inf")]
+    df_quotes["ph_age"] = pd.cut(
+        df_quotes["ProposerAgeYears"], 
+        bins=ph_bins, 
+        labels=ph_age_order, 
+        right=True, 
+        include_lowest=True
+    )
+
+    # Pet Age in months
+    df_quotes["pet_age_mnths"] = df_quotes.apply(
+        lambda x: (
+            pd.to_datetime(x["ItemDateTime"]).year - pd.to_datetime(x["PetDOB"]).year
+        ) * 12
+        + (pd.to_datetime(x["ItemDateTime"]).month - pd.to_datetime(x["PetDOB"]).month),
+        axis=1
+    )
+    df_quotes["pet_age"] = df_quotes["pet_age_mnths"]
+
+    # Pet Age & Gender
+    pet_bins_1 = [0, 50, 100, float("inf")]
+    pet_labels_1 = ["1\u201350", "51\u2013100", "101+"]
+    df_quotes["pet_age_mnths"] = pd.cut(
+        df_quotes["pet_age_mnths"], 
+        bins=pet_bins_1, 
+        labels=pet_labels_1, 
+        right=True, 
+        include_lowest=True
+    )
+    df_quotes["pet_age_gender"] = (
+        df_quotes["gender"].astype(str) + ": " + df_quotes["pet_age_mnths"].astype(str)
+    ).str.lower()
+
+    # Pet Age in Months
+    pet_bins_2 = [
+        0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,28,31,
+        34,37,40,43,46,48,54,60,66,72,78,84,90,96,102,108,114,120,126,132,138,
+        144,150,156,162,168,174,180,186,192,204,216,228,240,float("inf")
+    ]
+    df_quotes["pet_age"] = pd.cut(
+        df_quotes["pet_age"], 
+        bins=pet_bins_2, 
+        labels=pet_age_order, 
+        right=True, 
+        include_lowest=True
+    )
+
+    # Cost of Pet
+    pet_price_bins = [0, 75, 150, 300, 600, 1200, float("inf")]
+    df_quotes["pet_price"] = pd.cut(
+        df_quotes["CostOfPet"],
+        bins = pet_price_bins,
+        labels = pet_price_order,
+        right=True,
+        include_lowest=True
+    )
+
+    # Pet Type
+    df_quotes["pet_type"] = df_quotes.apply(
+        lambda row: "dog"
+                    if row["PetSubType"].lower() in ["crossbreed", 'pedigree', "mongrel"]
+                    else "cat",
+        axis=1
+    ).str.lower()
+
+    # Fetch Rates
+    all_rates = PetRates.objects.all()
+    df_rates = pd.DataFrame(list(all_rates.values()))
+    print(df_rates)
+
+    # Prepare base rates DataFrame
+    base_rates = df_rates[
+        (df_rates["factor"] == "base_rate") & 
+        (df_rates["scheme"] != "bronze")
+        ][["pet_type", "scheme", "rate"]]
+
+    base_rates = base_rates.rename(columns={"rate": "base_rate"})
+
+    # 1 row per 
+    melted_quotes = df_quotes.merge(base_rates, how="inner", on="pet_type")
+
+    factors = [
+        "pet_age_gender", "pet_age", "pet_price", "neutered_gender", "chipped",
+        "vaccinations", "pre_existing", "aggressive", "is_pet_yours", "postcode",
+        "uk_resident", "kept_at_address", "trade_business", "ph_age", "multipet"
+    ]
+
+    # Handle breed separately because it depends on pet type
+    breed_mask = df_rates["factor"].isin(["dog_breed", "cat_breed"])
+    breed_rates = df_rates[breed_mask].rename(columns={"option": "breed", "rate": "breed_factor"})
+    breed_rates = breed_rates[["pet_type", "scheme", "breed", "breed_factor"]]
+
+    # Merge breed factor
+    melted_quotes = melted_quotes.merge(breed_rates, how="left", on=["pet_type", "scheme", "breed"])
+
+    # Now handle remaining factors
+    for factor in factors:
+        df_factor = df_rates[df_rates["factor"] == factor].rename(
+            columns={"option": factor, "rate": f"{factor}_factor"}
+        )
+        df_factor = df_factor[["pet_type", "scheme", factor, f"{factor}_factor"]]
+        melted_quotes = melted_quotes.merge(df_factor, how="left", on=["pet_type", "scheme", factor])
+
+    # Copay
+    copay_rates = df_rates[
+        (df_rates["factor"] == "copay") & 
+        (df_rates["scheme"] != "bronze")
+        ][["pet_type", "scheme", "rate", "option"]]
+
+    copay_rates = copay_rates.rename(columns={"option": "copay", "rate": "copay_factor"})
+    
+    melted_quotes = melted_quotes.merge(copay_rates, how="left", on=["pet_type", "scheme"])
+
+    # Prem Calc
+    melted_quotes["quoted_gwp"] = melted_quotes.eval(
+        "base_rate * pet_age_factor * pet_age_gender_factor * breed_factor * pet_price_factor *"
+        "neutered_gender_factor * chipped_factor * vaccinations_factor * pre_existing_factor *"
+        "aggressive_factor * is_pet_yours_factor * postcode_factor * uk_resident_factor *"
+        "kept_at_address_factor * trade_business_factor * ph_age_factor * copay_factor * multipet_factor"
+    )
+
+    melted_quotes["scheme_copay"] = (
+        melted_quotes["scheme"].astype(str) + "_" + melted_quotes["copay"].astype(str)
+    )
+    print(melted_quotes)
+    melted_quotes.to_csv(r'C:\Users\jorda\OneDrive\Desktop\melted.csv', index=False)
+    
+    # Pivot Data back to 1 pet per row
+    pivoted_quotes = melted_quotes.pivot_table(
+        index=[
+            "ItemDateTime",
+            "SourceFile",
+            "ClientID"
+        ],
+        columns="scheme_copay",
+        values="quoted_gwp",
+        aggfunc="first"
+    ).reset_index()
+    
+    pivoted_quotes.to_csv(r'C:\Users\jorda\OneDrive\Desktop\quote_checks.csv', index=False)
+
+    
+    return render(request, "base/quote_data.html")
 
 
 
