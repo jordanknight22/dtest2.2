@@ -5,7 +5,6 @@ urlpatterns = [
     path('', views.home, name='home'),
     # path('policy_list/', views.policy_list, name='policy_list'),
     # path('gwp-summaries/', views.gwp_summaries, name='gwp-summary'),
-    path('quote_data/', views.quote_data, name='quote_data'),
     path('rates/', views.rates, name='rates'),
     path('rates/prem_calc/', views.prem_calc, name='prem_calc'),
     path("rates/get_pet_rates/", views.get_pet_rates, name="get_pet_rates"),
