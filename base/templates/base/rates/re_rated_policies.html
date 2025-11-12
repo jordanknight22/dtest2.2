@@ -1,52 +1,43 @@
 {% load custom_tags %}
+{% load humanize %}
 
 <a href="/rates">
     <h1>Back</h1>
 </a>
 
+<form method="post">
+  {% csrf_token %}
+  <div>
+    {{ form.copay.label_tag }} {{ form.copay }}
+  </div>
+  <div>
+    {{ form.asat_date.label_tag }} {{ form.asat_date }}
+  </div>
+  <button type="submit">Submit</button>
+</form>
+
+
+
+
 <hr>
-<div class="container mt-4">
-    <h2>Policies</h2>
-    <table cborder="1" style="border-collapse: collapse; width: 100%; text-align: left;">
-        <thead>
-            <tr>
-                <th>Policy Master ID</th>
-                <th>Policy Number</th>
-                <th>Transaction Name</th>
-                <th>Inception Date</th>
-                <th>Pet Type</th>
-                <th>Scheme</th>
-                <th>Breed</th>
-                <th>Purchase Price</th>
-                <th>Postcode</th>
-                <th>Policyholder Age</th>
-                <th>Co-Insurance</th>
-                <th>Charged GWP Per Pet</th>
-                <th>Charged GWP Per Policy</th>
-                <th>Re-rated GWP Per Pet</th>
-                <th>Re-rated GWP Per Policy</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for policy in policies %}
-            <tr>
-                <td>{{ policy.policy_master_id }}</td>
-                <td>{{ policy.policy_number }}</td>
-                <td>{{ policy.transaction_name }}</td>
-                <td>{{ policy.effective_date }} </td>
-                <td>{{ policy.PetType }}</td>
-                <td>{{ policy.scheme }}</td>
-                <td>{{ policy.Breed }}</td>
-                <td>{{ policy.CostOfPet }}</td>
-                <td>{{ policy.postcode }}</td>
-                <td>{{ policy.ph_age }}</td>
-                <td>{{ policy.copay }}</td>
-                <td>{{ policy.gwp_per_pet|floatformat:2 }}</td>
-                <td>{{ policy.gwp|floatformat:2 }}</td>
-                <td>{{ policy.re_rated_gwp_per_pet|floatformat:2 }}</td>
-                <td>{{ policy.re_rated_gwp_per_pol|floatformat:2 }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+<h3>New Business & Renewal Premiums</h3>
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>UW Month</th>
+      <th>GWP</th>
+      <th>Re-rated GWP</th>
+      <th>Rate Change</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in sum_pols %}
+    <tr>
+      <td>{{ row.inception_month|floatformat:2 }}</td>
+      <td>{{ row.gwp|floatformat:0|intcomma }}</td>
+      <td>{{ row.re_rated_gwp|floatformat:0|intcomma }}</td>
+      <td>{{ row.rate_change|percent:1 }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

@@ -6,6 +6,7 @@ from django.views.decorators.http import require_GET
 from django.http import JsonResponse
 from .utils import *
 from base import static_data
+from .forms import UserForms
 
 # Helper to convert defaultdict -> dict recursively
 def convert_defaultdict(d):
@@ -378,18 +379,66 @@ def get_pet_rates(request):
         "pet_age_rate": pet_age_rate
     })
 
+
 def re_rated_policies(request):
-    # Load cached data from disk (no DB queries)
+    # Load cached data (no DB queries)
     static_data.load_re_rated_cache()
     df_merged = static_data.RE_RATED_CACHE
-    df_merged = df_merged[df_merged["decline_flag"] == "N"]
-    print(df_merged)
 
-    # Convert DataFrame to list of dicts for template rendering
+    # Filter Policy Records
+    df_merged = df_merged[df_merged["decline_flag"] == "N"]
+    df_merged = df_merged[df_merged["transaction_name"] == "New Business"]
+
+    # Initialize defaults
+    copay = None
+    asat_date = None
+
+    if request.method == 'POST':
+        form = UserForms(request.POST)
+        if form.is_valid():
+            copay = form.cleaned_data['copay']
+            asat_date = form.cleaned_data['asat_date']
+
+            # Convert to float safely (since form returns string)
+            try:
+                asat_date = float(asat_date)
+            except (TypeError, ValueError):
+                asat_date = None
+
+            print(f"Co-pay: {copay}, As At Date: {asat_date}")
+
+            if asat_date is not None:
+                df_merged["inception_month"] = df_merged["inception_month"].astype(float)
+                df_merged = df_merged[df_merged["inception_month"] <= asat_date]
+
+            # Filter by Co-pay only if not '*'
+            if copay is not None and "copay" in df_merged.columns:
+                if copay != '*':
+                    df_merged = df_merged[df_merged["copay"] == copay]
+    else:
+        form = UserForms()
+
+    # ---- Group and sum GWP fields by inception_month ----
+    df_sum = (
+        df_merged.groupby("inception_month", as_index=False)[["gwp_per_pet", "re_rated_gwp_per_pet"]]
+        .sum()
+        .rename(columns={"gwp_per_pet": "gwp", "re_rated_gwp_per_pet": "re_rated_gwp"})
+        .sort_values("inception_month")
+
+    )
+    df_sum["rate_change"] = div0(df_sum["re_rated_gwp"], df_sum["gwp"]) - 1
+
+    # Convert for template rendering
+    sum_pols = df_sum.to_dict(orient="records")
     policies = df_merged.to_dict(orient="records")
 
-    return render(request, "base/rates/re_rated_policies.html", {"policies": policies})
+    print(sum_pols)
 
+    return render(
+        request,
+        "base/rates/re_rated_policies.html",
+        {"policies": policies, "sum_pols": sum_pols, "form": form}
+    )
 
 def test(request):
 

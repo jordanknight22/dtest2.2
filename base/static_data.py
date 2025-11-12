@@ -35,7 +35,7 @@ def div0(numerator, denominator):
             return 0
 
 
-rating_guide =  r'C:\Users\jorda\OneDrive\Desktop\SP Rating Guide v40 - Breed changes.xlsx'
+rating_guide =  r'C:\Users\jorda\OneDrive - Only Pets Cover Limited\Desktop\SP Rating Guide v40 - Breed changes.xlsx'
 
 pet_age_order = ['0','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16',
              '17','18','19','20','21','22','23','24–28','29–31','32–34','35–37','38–40',
@@ -687,7 +687,7 @@ def re_rated_cache():
         )["re_rated_gwp_per_pet"].transform("sum")
     # --------------------------------------------------
     # Export to CSV
-    df_merged.to_csv(r'C:\Users\jorda\OneDrive\Desktop\df_merged_export.csv', index=False)
+    df_merged.to_csv(r'C:\Users\jorda\OneDrive - Only Pets Cover Limited\Desktop\df_merged_export.csv', index=False)
     
     RE_RATED_CACHE = df_merged
 
@@ -715,26 +715,31 @@ def load_re_rated_cache():
 # Load Quote Data and check GWP Quoted
 # -------------------------
 def quote_data():
-    quotes =  r'C:\Users\jorda\OneDrive\Desktop\quotemasternov10.xlsx'
-    df_quotes = pd.read_excel(quotes, sheet_name="quotemasternov10", header=0)
+    quotes =  r'C:\Users\jorda\OneDrive - Only Pets Cover Limited\Desktop\quotemasterS&PBreedCode.xlsx'
+    df_quotes = pd.read_excel(quotes, sheet_name="quotemasterS&PBreedCode", header=0)
 
     print(df_quotes)
 
-    df_quotes = df_quotes[df_quotes["SourceFile"] == '00000000000035238749.json']
+    df_quotes = df_quotes[df_quotes["SourceFile"] == '00000000000035222682.json']
 
     # FORMATTING RATING FACTORS
     # Add S/M/L to crossbreed
     def compute_breed(row):
-        pet_subtype = str(row.get("PetSubType", "")).lower()  # safe access
-        breed = str(row.get("BreedInstepCode", "")).lower()
+        pet_type = str(row.get("PetType", "")).lower()
+        pet_subtype = str(row.get("PetSubType", "")).lower()
+        breed = str(row.get("BreedName", "")).lower()
         size = str(row.get("Size", "")).lower()
 
         if pet_subtype == "moggie":
             return pet_subtype
+        elif pet_type == "cat":
+            return breed
         elif pet_subtype in ["crossbreed", "mongrel"]:
             return f"{pet_subtype}: {size}"
         elif "mongrel" in breed:
             return f"mongrel: {size}"
+        elif "crossbreed" in breed:
+            return f"crossbreed: {size}"
         else:
             return breed
 
@@ -900,7 +905,7 @@ def quote_data():
         melted_quotes["scheme"].astype(str) + "_" + melted_quotes["copay"].astype(str)
     )
     print(melted_quotes)
-    melted_quotes.to_csv(r'C:\Users\jorda\OneDrive\Desktop\melted.csv', index=False)
+    melted_quotes.to_csv(r'C:\Users\jorda\OneDrive - Only Pets Cover Limited\Desktop\melted.csv', index=False)
     
     # Pivot Data back to 1 pet per row
     pivoted_quotes = melted_quotes.pivot_table(
@@ -914,4 +919,4 @@ def quote_data():
         aggfunc="sum"
     ).reset_index()
     
-    pivoted_quotes.to_csv(r'C:\Users\jorda\OneDrive\Desktop\quote_checks.csv', index=False)
+    pivoted_quotes.to_csv(r'C:\Users\jorda\OneDrive - Only Pets Cover Limited\Desktop\quote_checks.csv', index=False)
