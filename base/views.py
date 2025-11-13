@@ -426,7 +426,8 @@ def re_rated_policies(request):
         .sort_values("inception_month")
 
     )
-    df_sum["rate_change"] = div0(df_sum["re_rated_gwp"], df_sum["gwp"]) - 1
+    df_sum["rate_index"] = div0(df_sum["re_rated_gwp"], df_sum["gwp"])
+    df_sum["rate_change"] = df_sum["rate_index"].pct_change()
 
     # Convert for template rendering
     sum_pols = df_sum.to_dict(orient="records")

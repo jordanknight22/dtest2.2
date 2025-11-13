@@ -1,43 +1,92 @@
 {% load custom_tags %}
 {% load humanize %}
 
-<a href="/rates">
-    <h1>Back</h1>
-</a>
+<style>
+  /* Custom table styling */
+  .custom-table {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+  }
 
-<form method="post">
-  {% csrf_token %}
-  <div>
-    {{ form.copay.label_tag }} {{ form.copay }}
+  .custom-table thead {
+    background-color: #0d6efd;
+    color: white;
+  }
+
+  .custom-table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+  }
+
+  .custom-table tbody tr:hover {
+    background-color: #e9f2ff;
+    transition: background-color 0.2s ease;
+  }
+
+  .custom-table th,
+  .custom-table td {
+    border: 1px solid #dee2e6;
+    padding: 0.75rem;
+    vertical-align: middle;
+  }
+</style>
+
+<div class="container mt-4">
+  <a href="/rates" class="btn btn-outline-secondary mb-3">
+    ← Back
+  </a>
+
+  <div class="card shadow-sm p-4 mb-4">
+    <h2 class="mb-3">Update Rate Details</h2>
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">{{ form.copay.label }}</label>
+          {{ form.copay }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">{{ form.asat_date.label }}</label>
+          {{ form.asat_date }}
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary mt-3">
+        Submit
+      </button>
+    </form>
   </div>
-  <div>
-    {{ form.asat_date.label_tag }} {{ form.asat_date }}
+
+  <hr class="my-4">
+
+  <div class="card shadow-sm p-4">
+    <h3 class="mb-3">New Business Premiums</h3>
+    <div class="table-responsive">
+      <table class="table custom-table align-middle">
+        <thead>
+          <tr>
+            <th>UW Month</th>
+            <th>GWP</th>
+            <th>Re-rated GWP</th>
+            <th>Rate Index</th>
+            <th>Rate Change</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in sum_pols %}
+          <tr>
+            <td>{{ row.inception_month|floatformat:2 }}</td>
+            <td>{{ row.gwp|floatformat:0|intcomma }}</td>
+            <td>{{ row.re_rated_gwp|floatformat:0|intcomma }}</td>
+            <td>{{ row.rate_index|percent:1 }}</td>
+            <td>{{ row.rate_change|percent:1 }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="text-center text-muted">No data available</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
-  <button type="submit">Submit</button>
-</form>
-
-
-
-
-<hr>
-<h3>New Business & Renewal Premiums</h3>
-<table class="table table-bordered">
-  <thead>
-    <tr>
-      <th>UW Month</th>
-      <th>GWP</th>
-      <th>Re-rated GWP</th>
-      <th>Rate Change</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for row in sum_pols %}
-    <tr>
-      <td>{{ row.inception_month|floatformat:2 }}</td>
-      <td>{{ row.gwp|floatformat:0|intcomma }}</td>
-      <td>{{ row.re_rated_gwp|floatformat:0|intcomma }}</td>
-      <td>{{ row.rate_change|percent:1 }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+</div>
